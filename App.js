@@ -1,11 +1,11 @@
 import React from 'react';
 import { SafeAreaView, StyleSheet } from 'react-native';
-import FoodLogScreen from './src/screens/FoodLogScreen';
+import Wireframes from './src/screens/Wireframes';
 
 function App() {
   return (
     <SafeAreaView style={styles.container}>
-      <FoodLogScreen />
+      <Wireframes />
     </SafeAreaView>
   );
 }
