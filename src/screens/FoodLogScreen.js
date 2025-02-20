@@ -3,14 +3,14 @@ import { View, Text, StyleSheet, TextInput, Button, FlatList } from 'react-nativ
 import { foodLogStyles } from './styles'; // Import styles
 
 const FoodLogScreen = () => {
-  const [foods, setFoods] = useState([]);
-  const [newFood, setNewFood] = useState('');
+  const [foodItems, setFoodItems] = useState([]);
+  const [newFoodItem, setNewFoodItem] = useState('');
   
-  const addFood = () => {
-    if (newFood.trim()) {
+  const handleAddFood = () => {
+    if (newFoodItem.trim()) {
       const foodItem = {
         id: Date.now().toString(),
-        name: newFood,
+        name: newFoodItem,
         nutrients: {
           calories: 0,
           protein: 0,
@@ -18,8 +18,8 @@ const FoodLogScreen = () => {
           fat: 0
         }
       };
-      setFoods([...foods, foodItem]);
-      setNewFood('');
+      setFoodItems([...foodItems, foodItem]);
+      setNewFoodItem('');
     }
   };
 
@@ -30,15 +30,15 @@ const FoodLogScreen = () => {
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          value={newFood}
-          onChangeText={setNewFood}
+          value={newFoodItem}
+          onChangeText={setNewFoodItem}
           placeholder="Enter food name"
         />
-        <Button title="Add" onPress={addFood} />
+        <Button title="Add" onPress={handleAddFood} />
       </View>
 
       <FlatList
-        data={foods}
+        data={foodItems}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.foodItem}>

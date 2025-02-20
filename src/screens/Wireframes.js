@@ -66,14 +66,7 @@ const ProfileScreen = () => (
       </View>
     </View>
 );
-
-const ChatScreen = () => (
-    <View style={wireframeStyles.screen}>
-      <View style={[wireframeStyles.box, wireframeStyles.flexGrow]}>
-        <Text>Add Text Here</Text>
-      </View>
-    </View>
-);
+// deleted shopping and chat screen
 
 const FoodLogScreen = () => (
     <View style={wireframeStyles.screen}>
@@ -132,7 +125,7 @@ export default function Wireframes() {
           tabBarIcon: ({ color, size }) => <shopping="shopping" color={color} size={size} />,
         }}
       />
-      */}
+      
       <Tab.Screen
         name="Chat"
         component={ChatScreen}
@@ -140,6 +133,7 @@ export default function Wireframes() {
           tabBarIcon: ({ color, size }) => <Icon name="message-circle" color={color} size={size} />,
         }}
       />
+      */}
       {/* Add FoodLogScreen as a new tab */}
       <Tab.Screen
         name="Food Log"
