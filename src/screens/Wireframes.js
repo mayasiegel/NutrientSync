@@ -1,3 +1,7 @@
+// add lines when I add useState
+// import React, { useState } from 'react';
+//import { View, Text, StyleSheet, ScrollView, TextInput, Button } from 'react-native';
+
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -48,14 +52,6 @@ const InventoryScreen = () => (
 );
 
 const NutrientsScreen = () => (
-    <View style={wireframeStyles.screen}>
-      <View style={[wireframeStyles.box, wireframeStyles.flexGrow]}>
-        <Text>Add Text Here</Text>
-      </View>
-    </View>
-);
-
-const ShoppingScreen = () => (
     <View style={wireframeStyles.screen}>
       <View style={[wireframeStyles.box, wireframeStyles.flexGrow]}>
         <Text>Add Text Here</Text>
@@ -119,13 +115,7 @@ export default function Wireframes() {
           tabBarIcon: ({ color, size }) => <Icon name="pie-chart" color={color} size={size} />,
         }}
       />
-      <Tab.Screen
-        name="Shopping"
-        component={ShoppingScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => <Icon name="shopping-cart" color={color} size={size} />,
-        }}
-      />
+      
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
@@ -133,6 +123,16 @@ export default function Wireframes() {
           tabBarIcon: ({ color, size }) => <Icon name="user" color={color} size={size} />,
         }}
       />
+      
+      {/*
+      <Tab.Screen
+        name="Shopping"
+        component={ShoppingScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => <shopping="shopping" color={color} size={size} />,
+        }}
+      />
+      */}
       <Tab.Screen
         name="Chat"
         component={ChatScreen}
