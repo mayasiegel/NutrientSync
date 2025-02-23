@@ -1,0 +1,6 @@
+module Pods_NutrientSync {
+  umbrella header "Pods-NutrientSync-umbrella.h"
+
+  export *
+  module * { export * }
+}
