@@ -2,12 +2,13 @@
 // import React, { useState } from 'react';
 //import { View, Text, StyleSheet, ScrollView, TextInput, Button } from 'react-native';
 
+// import { NavigationContainer } from '@react-navigation/native';
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Feather';
 import FoodLogScreen from './FoodLogScreen';
-import { wireframeStyles } from './styles';
+import { wireframeStyles } from '../styles';
 
 const Tab = createBottomTabNavigator();
 
@@ -67,14 +68,6 @@ const ProfileScreen = () => (
     </View>
 );
 // deleted shopping and chat screen
-
-const FoodLogScreen = () => (
-    <View style={wireframeStyles.screen}>
-      <View style={[wireframeStyles.box, wireframeStyles.flexGrow]}>
-        <Text>Add Text Here</Text>
-      </View>
-    </View>
-);
 
 // tabs
 export default function Wireframes() {
