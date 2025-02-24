@@ -77,7 +77,7 @@ export default function Wireframes() {
         name="Home"
         component={HomeScreen}
         options={{
-          tabBarIcon: ({ color, size }) => <Icon name="bar-chart-2" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <Icon name="home" color={color} size={size} />,
         }}
       />
       <Tab.Screen
