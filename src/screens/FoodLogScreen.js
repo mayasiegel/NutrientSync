@@ -71,14 +71,14 @@ const FoodLogScreen = () => {
 
       <View style={foodLogStyles.buttonContainer}>
         <TouchableOpacity 
-          style={foodLogStyles.button}
+          style={[foodLogStyles.button, { backgroundColor: '#235789' }]}
           onPress={() => console.log('Scanned food')}
         >
           <Text style={foodLogStyles.scanCustomButtonText}>Add Scanned Food</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
-          style={foodLogStyles.button}
+          style={[foodLogStyles.button, { backgroundColor: '#235789' }]}
           onPress={() => console.log('Custom food')}
         >
           <Text style={foodLogStyles.scanCustomButtonText}>Add Custom Food</Text>

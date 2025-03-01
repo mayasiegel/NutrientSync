@@ -9,6 +9,15 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Feather';
 import FoodLogScreen from './FoodLogScreen';
 import { wireframeStyles } from '../styles';
+import ProfileScreen from './ProfileScreen';
+import InventoryScreen from './InventoryScreen';
+// const ProfileScreen = () => (
+//     <View style={wireframeStyles.screen}>
+//       <View style={[wireframeStyles.box, wireframeStyles.flexGrow]}>
+//         <Text>Add Text Here</Text>
+//       </View>
+//     </View>
+// );
 
 const Tab = createBottomTabNavigator();
 
@@ -44,14 +53,6 @@ const ScanScreen = () => (
     </View>
 );
 
-const InventoryScreen = () => (
-    <View style={wireframeStyles.screen}>
-      <View style={[wireframeStyles.box, wireframeStyles.flexGrow]}>
-        <Text>Add Text Here</Text>
-      </View>
-    </View>
-);
-
 const NutrientsScreen = () => (
     <View style={wireframeStyles.screen}>
       <View style={[wireframeStyles.box, wireframeStyles.flexGrow]}>
@@ -60,19 +61,20 @@ const NutrientsScreen = () => (
     </View>
 );
 
-const ProfileScreen = () => (
-    <View style={wireframeStyles.screen}>
-      <View style={[wireframeStyles.box, wireframeStyles.flexGrow]}>
-        <Text>Add Text Here</Text>
-      </View>
-    </View>
-);
 // deleted shopping and chat screen
 
 // tabs
 export default function Wireframes() {
   return (
-    <Tab.Navigator>
+    <Tab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: '#235789',
+        tabBarInactiveTintColor: 'gray',
+        tabBarStyle: {
+          // You can add more styling for the tab bar here if needed
+        },
+      }}
+    >
       <Tab.Screen
         name="Home"
         component={HomeScreen}
@@ -91,9 +93,10 @@ export default function Wireframes() {
         name="Inventory"
         component={InventoryScreen}
         options={{
-          tabBarIcon: ({ color, size }) => <Icon name="list" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <Icon name="package" color={color} size={size} />,
         }}
       />
+      
       <Tab.Screen
         name="Nutrients"
         component={NutrientsScreen}
@@ -102,13 +105,7 @@ export default function Wireframes() {
         }}
       />
       
-      <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => <Icon name="user" color={color} size={size} />,
-        }}
-      />
+      
       
       {/*
       <Tab.Screen
@@ -133,6 +130,13 @@ export default function Wireframes() {
         component={FoodLogScreen}
         options={{
           tabBarIcon: ({ color, size }) => <Icon name="book" color={color} size={size} />,
+        }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => <Icon name="user" color={color} size={size} />,
         }}
       />
     </Tab.Navigator>
