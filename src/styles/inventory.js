@@ -1,9 +1,21 @@
 import { StyleSheet } from 'react-native';
 
+// New color palette
+const colors = {
+  blackOlive: '#34403A',
+  emerald: '#0CCE6B',
+  whiteSmoke: '#F2F4F3',
+  glaucous: '#507DBC',
+  satinGold: '#C8963E',
+  red: '#f44336', // Keeping red for remove buttons
+  background: '#b1ecd4', // Background color
+  lightGreen: '#cefad0' // Lighter green for buttons (about 20% lighter than background)
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -26,21 +38,23 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   addItemContainer: {
-    backgroundColor: 'white',
+    backgroundColor: colors.lightGreen,
     padding: 16,
-    marginBottom: 16,
+    marginBottom: 24, // Increased margin to add more space between sections
     borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    borderWidth: 1, // Added border
+    borderColor: colors.blackOlive, // Black outline
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 12,
-    color: '#235789',
+    color: colors.blackOlive,
   },
   inputRow: {
     flexDirection: 'row',
@@ -50,12 +64,12 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.blackOlive,
     borderRadius: 4,
     padding: 10,
     marginRight: 8,
-    backgroundColor: '#eec584',
-    color: '#333',
+    backgroundColor: colors.lightGreen,
+    color: colors.blackOlive,
   },
   smallInput: {
     flex: 0,
@@ -68,20 +82,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   addButton: {
-    backgroundColor: '#235789',
+    backgroundColor: colors.glaucous,
     padding: 12,
     borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 8,
     flex: 0.35,
+    borderWidth: 1,
+    borderColor: colors.blackOlive,
   },
   addButtonText: {
-    color: 'white',
+    color: colors.whiteSmoke,
     fontWeight: 'bold',
   },
   listContainer: {
     flex: 1,
+    marginTop: 8, // Added a small top margin to the list container
   },
   list: {
     flex: 1,
@@ -91,7 +108,7 @@ const styles = StyleSheet.create({
   },
   itemContainer: {
     flexDirection: 'row',
-    backgroundColor: 'white',
+    backgroundColor: colors.lightGreen,
     padding: 16,
     marginBottom: 8,
     borderRadius: 8,
@@ -100,6 +117,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 1,
+    borderWidth: 1,
+    borderColor: colors.blackOlive,
   },
   itemDetails: {
     flex: 1,
@@ -108,6 +127,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
+    color: colors.blackOlive,
   },
   itemInfo: {
     fontSize: 14,
@@ -118,13 +138,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   actionButton: {
-    backgroundColor: '#f44336',
+    backgroundColor: colors.red,
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.blackOlive,
   },
   actionButtonText: {
-    color: 'white',
+    color: colors.whiteSmoke,
     fontWeight: 'bold',
   },
 });

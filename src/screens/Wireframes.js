@@ -71,7 +71,7 @@ export default function Wireframes() {
         tabBarActiveTintColor: '#235789',
         tabBarInactiveTintColor: 'gray',
         tabBarStyle: {
-          // You can add more styling for the tab bar here if needed
+          // add more styling for the tab bar here if needed
         },
       }}
     >
