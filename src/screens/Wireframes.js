@@ -7,10 +7,11 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Feather';
-import FoodLogScreen from './FoodLogScreen';
+import DailyFoodLogScreen from './DailyFoodLogScreen';
 import { wireframeStyles } from '../styles';
 import ProfileScreen from './ProfileScreen';
 import InventoryScreen from './InventoryScreen';
+import NutrientsScreen from './NutrientsScreen';
 // const ProfileScreen = () => (
 //     <View style={wireframeStyles.screen}>
 //       <View style={[wireframeStyles.box, wireframeStyles.flexGrow]}>
@@ -53,7 +54,7 @@ const ScanScreen = () => (
     </View>
 );
 
-const NutrientsScreen = () => (
+const NutrientsScreenWireframe = () => (
     <View style={wireframeStyles.screen}>
       <View style={[wireframeStyles.box, wireframeStyles.flexGrow]}>
         <Text>Add Text Here</Text>
@@ -126,9 +127,10 @@ export default function Wireframes() {
       */}
       {/* Add FoodLogScreen as a new tab */}
       <Tab.Screen
-        name="Food Log"
-        component={FoodLogScreen}
+        name="DailyFoodLog"
+        component={DailyFoodLogScreen}
         options={{
+          tabBarLabel: 'Daily Log',
           tabBarIcon: ({ color, size }) => <Icon name="book" color={color} size={size} />,
         }}
       />

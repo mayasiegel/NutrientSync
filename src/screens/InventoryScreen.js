@@ -8,9 +8,13 @@ import {
   Alert,
   ScrollView,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  StyleSheet
 } from 'react-native';
-import styles from '../styles/inventory';
+import inventoryStyles from '../styles/inventory';
+import theme from '../styles/theme';
+
+const { COLORS, SIZES } = theme;
 
 const InventoryScreen = () => {
   const [foodItems, setFoodItems] = useState([
@@ -96,6 +100,10 @@ const InventoryScreen = () => {
   
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.headerContainer}>
+        <Text style={styles.title}>Inventory</Text>
+        <Text style={styles.subtitle}>Your digital refrigerator</Text>
+      </View>
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
@@ -182,5 +190,27 @@ const InventoryScreen = () => {
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  ...inventoryStyles,
+  headerContainer: {
+    paddingTop: 20,
+    paddingBottom: 10,
+    backgroundColor: COLORS.background,
+  },
+  title: {
+    fontSize: SIZES.xxlarge,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: COLORS.text,
+    paddingHorizontal: 20,
+  },
+  subtitle: {
+    fontSize: SIZES.large,
+    color: COLORS.text,
+    marginBottom: 10,
+    paddingHorizontal: 20,
+  },
+});
 
 export default InventoryScreen;

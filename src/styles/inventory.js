@@ -8,7 +8,7 @@ const colors = {
   glaucous: '#507DBC',
   satinGold: '#C8963E',
   red: '#f44336', // Keeping red for remove buttons
-  background: '#b1ecd4', // Background color
+  background: 'ffffff', //'#b1ecd4', // Background color
   lightGreen: '#cefad0' // Lighter green for buttons (about 20% lighter than background)
 };
 
