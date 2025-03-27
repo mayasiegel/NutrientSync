@@ -1,13 +1,9 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 
 const InventoryContext = createContext();
 
 export const useInventory = () => {
-  const context = useContext(InventoryContext);
-  if (!context) {
-    throw new Error('useInventory must be used within an InventoryProvider');
-  }
-  return context;
+  return useContext(InventoryContext);
 };
 
 export const InventoryProvider = ({ children }) => {
@@ -24,22 +20,35 @@ export const InventoryProvider = ({ children }) => {
     { id: '10', name: 'Yogurt', quantity: 4, unit: 'cups', expiryDate: '2023-12-18', calories: 59, category: 'Dairy' },
   ]);
 
-  const addItem = (item) => {
-    setInventory([...inventory, { ...item, id: Date.now().toString() }]);
+  const addInventoryItem = (item) => {
+    setInventory(prev => [...prev, item]);
   };
 
-  const removeItem = (id) => {
-    setInventory(inventory.filter(item => item.id !== id));
+  const removeInventoryItem = (id) => {
+    setInventory(prev => prev.filter(item => item.id !== id));
   };
 
-  const updateItem = (id, updates) => {
-    setInventory(inventory.map(item => 
-      item.id === id ? { ...item, ...updates } : item
-    ));
+  const updateInventoryItemQuantity = (id, newQuantity) => {
+    setInventory(prev => prev.map(item => {
+      if (item.id === id) {
+        if (newQuantity <= 0) {
+          return null;
+        }
+        return { ...item, quantity: newQuantity };
+      }
+      return item;
+    }).filter(Boolean));
+  };
+
+  const value = {
+    inventory,
+    addInventoryItem,
+    removeInventoryItem,
+    updateInventoryItemQuantity,
   };
 
   return (
-    <InventoryContext.Provider value={{ inventory, addItem, removeItem, updateItem }}>
+    <InventoryContext.Provider value={value}>
       {children}
     </InventoryContext.Provider>
   );

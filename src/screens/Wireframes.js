@@ -12,34 +12,14 @@ import { wireframeStyles } from '../styles';
 import ProfileScreen from './ProfileScreen';
 import InventoryScreen from './InventoryScreen';
 import NutrientsScreen from './NutrientsScreen';
-// const ProfileScreen = () => (
-//     <View style={wireframeStyles.screen}>
-//       <View style={[wireframeStyles.box, wireframeStyles.flexGrow]}>
-//         <Text>Add Text Here</Text>
-//       </View>
-//     </View>
-// );
+import HomeScreen from './HomeScreen';
+import theme from '../styles/theme';
+
+const { COLORS } = theme;
 
 const Tab = createBottomTabNavigator();
 
 // screens
-const HomeScreen = () => (
-    <ScrollView style={wireframeStyles.screen}>
-      <View style={wireframeStyles.box}>
-        <Text>Nutrient Summary Chart</Text>
-      </View>
-      <View style={wireframeStyles.box}>
-        <Text>Today's Intake</Text>
-      </View>
-      <View style={wireframeStyles.box}>
-        <Text>Expiring Soon</Text>
-      </View>
-      <View style={wireframeStyles.box}>
-        <Text>Recommendations</Text>
-      </View>
-    </ScrollView>
-);
-
 const ScanScreen = () => (
     <View style={wireframeStyles.screen}>
       <View style={[wireframeStyles.box, wireframeStyles.flexGrow]}>
@@ -69,10 +49,22 @@ export default function Wireframes() {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: '#235789',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.gray,
         tabBarStyle: {
-          // add more styling for the tab bar here if needed
+          backgroundColor: COLORS.white,
+          borderTopColor: COLORS.lightGray,
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+        },
+        headerStyle: {
+          backgroundColor: COLORS.white,
+        },
+        headerTintColor: COLORS.primary,
+        headerTitleStyle: {
+          fontWeight: 'bold',
+          color: COLORS.primary,
         },
       }}
     >

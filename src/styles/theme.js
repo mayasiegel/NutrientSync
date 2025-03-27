@@ -3,43 +3,53 @@ import { Dimensions } from 'react-native';
 const { width, height } = Dimensions.get('window');
 
 const COLORS = {
-  // Primary colors from the palette
-  blackOlive: '#34403A',
-  emerald: '#0CCE6B',
-  whiteSmoke: '#F2F4F3',
-  glaucous: '#507DBC',
-  satinGold: '#C8963E',
-
-  // Additional semantic colors
-  primary: '#0CCE6B', // Using emerald as primary
-  secondary: '#507DBC', // Using glaucous as secondary
-  background: '#F2F4F3', // Using white smoke as background
-  text: '#34403A', // Using black olive as main text color
-  accent: '#C8963E', // Using satin gold as accent
-  error: '#FF3B30', // Error color
+  primary: '#4A90E2',
+  secondary: '#50C878',
+  background: '#F5F5F5',
+  text: '#333333',
+  error: '#FF6B6B',
+  success: '#4CAF50',
+  warning: '#FFA726',
+  info: '#29B6F6',
+  glaucous: '#6082B6',
+  whiteSmoke: '#F5F5F5',
+  gray: '#808080',
+  lightGray: '#D3D3D3',
+  darkGray: '#A9A9A9',
+  black: '#000000',
+  white: '#FFFFFF',
 };
 
 const SIZES = {
   // Font sizes
+  xxsmall: 8,
   xsmall: 10,
   small: 12,
-  medium: 16,
-  large: 20,
-  xlarge: 24,
-  xxlarge: 32,
-
+  medium: 14,
+  large: 16,
+  xlarge: 18,
+  xxlarge: 24,
+  
   // Spacing
   padding: {
     small: 8,
     medium: 16,
-    large: 20,
-    xlarge: 24,
+    large: 24,
+    xlarge: 32,
   },
   margin: {
     small: 8,
     medium: 16,
-    large: 20,
-    xlarge: 24,
+    large: 24,
+    xlarge: 32,
+  },
+  
+  // Border radius
+  borderRadius: {
+    small: 4,
+    medium: 8,
+    large: 12,
+    xlarge: 16,
   },
 
   // Screen dimensions
@@ -139,7 +149,7 @@ const mixins = {
   },
 };
 
-export {
+const theme = {
   COLORS,
   SIZES,
   FONTS,
@@ -148,11 +158,4 @@ export {
   mixins,
 };
 
-export default {
-  COLORS,
-  SIZES,
-  FONTS,
-  SHADOWS,
-  LAYOUT,
-  mixins,
-};
+export default theme;

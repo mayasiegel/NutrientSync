@@ -8,8 +8,8 @@ const colors = {
   glaucous: '#507DBC',
   satinGold: '#C8963E',
   red: '#f44336', // Keeping red for remove buttons
-  background: 'ffffff', //'#b1ecd4', // Background color
-  lightGreen: '#cefad0' // Lighter green for buttons (about 20% lighter than background)
+  background: '#ffffff', // White background
+  white: '#ffffff' // White for components
 };
 
 const styles = StyleSheet.create({
@@ -38,17 +38,17 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   addItemContainer: {
-    backgroundColor: colors.lightGreen,
+    backgroundColor: colors.white,
     padding: 16,
-    marginBottom: 24, // Increased margin to add more space between sections
+    marginBottom: 24,
     borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-    borderWidth: 1, // Added border
-    borderColor: colors.blackOlive, // Black outline
+    borderWidth: 1,
+    borderColor: colors.blackOlive,
   },
   sectionTitle: {
     fontSize: 18,
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     padding: 10,
     marginRight: 8,
-    backgroundColor: colors.lightGreen,
+    backgroundColor: colors.white,
     color: colors.blackOlive,
   },
   smallInput: {
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     flex: 1,
-    marginTop: 8, // Added a small top margin to the list container
+    marginTop: 8,
   },
   list: {
     flex: 1,
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   },
   itemContainer: {
     flexDirection: 'row',
-    backgroundColor: colors.lightGreen,
+    backgroundColor: colors.white,
     padding: 16,
     marginBottom: 8,
     borderRadius: 8,

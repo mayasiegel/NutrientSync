@@ -23,7 +23,7 @@ const DailyFoodLogScreen = () => {
   const [totalCalories, setTotalCalories] = useState(0);
   const [showFoodPicker, setShowFoodPicker] = useState(false);
   const navigation = useNavigation();
-  const { inventory } = useInventory();
+  const { inventory, updateInventoryItemQuantity } = useInventory();
 
   const addFoodItem = () => {
     if (!selectedFood || quantity.trim() === '') {
@@ -34,6 +34,12 @@ const DailyFoodLogScreen = () => {
     const quantityNum = parseFloat(quantity);
     if (isNaN(quantityNum) || quantityNum <= 0) {
       Alert.alert('Error', 'Please enter a valid quantity');
+      return;
+    }
+
+    // Check if there's enough quantity in inventory
+    if (quantityNum > selectedFood.quantity) {
+      Alert.alert('Error', `Not enough ${selectedFood.name} in inventory. Available: ${selectedFood.quantity} ${selectedFood.unit}`);
       return;
     }
 
@@ -48,7 +54,12 @@ const DailyFoodLogScreen = () => {
       caloriesPerUnit: selectedFood.calories,
       date: currentDate,
       time: new Date().toLocaleTimeString(),
+      inventoryId: selectedFood.id, // Store the inventory item ID for reference
     };
+
+    // Update inventory quantity
+    const remainingQuantity = selectedFood.quantity - quantityNum;
+    updateInventoryItemQuantity(selectedFood.id, remainingQuantity);
 
     setFoodItems([...foodItems, newItem]);
     setTotalCalories(totalCalories + totalItemCalories);
@@ -57,6 +68,17 @@ const DailyFoodLogScreen = () => {
   };
 
   const deleteFoodItem = (id, itemCalories) => {
+    const itemToDelete = foodItems.find(item => item.id === id);
+    if (itemToDelete) {
+      // Find the corresponding inventory item
+      const inventoryItem = inventory.find(item => item.id === itemToDelete.inventoryId);
+      if (inventoryItem) {
+        // Return the quantity back to inventory
+        const newQuantity = inventoryItem.quantity + itemToDelete.quantity;
+        updateInventoryItemQuantity(itemToDelete.inventoryId, newQuantity);
+      }
+    }
+    
     setFoodItems(foodItems.filter(item => item.id !== id));
     setTotalCalories(totalCalories - itemCalories);
   };
@@ -90,21 +112,23 @@ const DailyFoodLogScreen = () => {
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Select Food from Inventory</Text>
           <ScrollView style={styles.foodList}>
-            {inventory.map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.foodOption}
-                onPress={() => {
-                  setSelectedFood(item);
-                  setShowFoodPicker(false);
-                }}
-              >
-                <Text style={styles.foodOptionName}>{item.name}</Text>
-                <Text style={styles.foodOptionDetails}>
-                  {item.calories} cal/{item.unit}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {inventory
+              .filter(item => item.quantity > 0) // Only show items with quantity > 0
+              .map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.foodOption}
+                  onPress={() => {
+                    setSelectedFood(item);
+                    setShowFoodPicker(false);
+                  }}
+                >
+                  <Text style={styles.foodOptionName}>{item.name}</Text>
+                  <Text style={styles.foodOptionDetails}>
+                    Available: {item.quantity} {item.unit} • {item.calories} cal/{item.unit}
+                  </Text>
+                </TouchableOpacity>
+              ))}
           </ScrollView>
           <TouchableOpacity
             style={styles.closeButton}
@@ -143,21 +167,6 @@ const DailyFoodLogScreen = () => {
           onPress={addFoodItem}
         >
           <Text style={styles.addButtonText}>Add</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity 
-          style={styles.button}
-          onPress={() => navigation.navigate('Camera')}
-        >
-          <Text style={styles.buttonText}>Scan Food</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.button}
-          onPress={() => navigation.navigate('CustomFood')}
-        >
-          <Text style={styles.buttonText}>Custom Food</Text>
         </TouchableOpacity>
       </View>
 
