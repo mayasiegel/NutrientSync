@@ -53,18 +53,38 @@ const styles = StyleSheet.create({
       borderRadius: 8,
       marginRight: 16,
     },
+    profilePictureCircle: {
+      width: 90,
+      height: 90,
+      borderRadius: 45,
+      backgroundColor: '#F8F9FA',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 20,
+      borderWidth: 2,
+      borderColor: '#E8E8E8',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    profilePictureEmoji: {
+      fontSize: 40,
+    },
     userInfoContainer: {
       flex: 1,
       justifyContent: 'center',
     },
     userName: {
-      fontSize: 22,
+      fontSize: 26,
       fontWeight: 'bold',
       marginBottom: 4,
+      color: '#2D3436',
     },
     userDetails: {
-      fontSize: 14,
-      color: '#666',
+      fontSize: 15,
+      color: '#636E72',
       marginBottom: 2,
     },
     sectionContainer: {
@@ -77,12 +97,14 @@ const styles = StyleSheet.create({
       shadowOpacity: 0.1,
       shadowRadius: 2,
       elevation: 1,
+      borderWidth: 1,
+      borderColor: '#F2F2F2',
     },
     sectionTitle: {
       fontSize: 18,
       fontWeight: 'bold',
       marginBottom: 10,
-      color: '#235789', // Using your app's color scheme
+      color: '#00B894',
     },
     sectionContent: {
       fontSize: 16,

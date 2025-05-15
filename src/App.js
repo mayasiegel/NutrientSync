@@ -9,6 +9,9 @@ import { InventoryProvider } from './context/InventoryContext';
 import HomeScreen from './screens/HomeScreen';
 import InventoryScreen from './screens/InventoryScreen';
 import ProfileScreen from './screens/ProfileScreen';
+import NutrientsScreen from './screens/NutrientsScreen';
+import DailyFoodLogScreen from './screens/DailyFoodLogScreen';
+import ScanScreen from './screens/ScanScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -30,7 +33,10 @@ function HomeTabs() {
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
           if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
+          else if (route.name === 'Scan') iconName = focused ? 'scan' : 'scan-outline';
           else if (route.name === 'Inventory') iconName = focused ? 'list' : 'list-outline';
+          else if (route.name === 'Daily') iconName = focused ? 'calendar' : 'calendar-outline';
+          else if (route.name === 'Nutrients') iconName = focused ? 'nutrition' : 'nutrition-outline';
           else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
           return <Ionicons name={iconName} size={size} color={color} />;
         },
@@ -43,7 +49,10 @@ function HomeTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Scan" component={ScanScreen} />
       <Tab.Screen name="Inventory" component={InventoryScreen} />
+      <Tab.Screen name="Daily" component={DailyFoodLogScreen} />
+      <Tab.Screen name="Nutrients" component={NutrientsScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );

@@ -111,25 +111,33 @@ const DailyFoodLogScreen = () => {
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Select Food from Inventory</Text>
-          <ScrollView style={styles.foodList}>
-            {inventory
-              .filter(item => item.quantity > 0) // Only show items with quantity > 0
-              .map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.foodOption}
-                  onPress={() => {
-                    setSelectedFood(item);
-                    setShowFoodPicker(false);
-                  }}
-                >
-                  <Text style={styles.foodOptionName}>{item.name}</Text>
-                  <Text style={styles.foodOptionDetails}>
-                    Available: {item.quantity} {item.unit} • {item.calories} cal/{item.unit}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-          </ScrollView>
+          <View style={styles.foodListScrollWrapper}>
+            <ScrollView style={styles.foodList} showsVerticalScrollIndicator={true}>
+              {inventory
+                .filter(item => item.quantity > 0)
+                .map((item, idx, arr) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[
+                      styles.foodOptionCard,
+                      idx === 0 ? { marginTop: 2 } : {},
+                      idx === arr.length - 1 ? { marginBottom: 2 } : {},
+                    ]}
+                    onPress={() => {
+                      setSelectedFood(item);
+                      setShowFoodPicker(false);
+                    }}
+                  >
+                    <Text style={styles.foodOptionName}>{item.name}</Text>
+                    <Text style={styles.foodOptionDetails}>
+                      Available: {item.quantity} {item.unit} • {item.calories} cal/{item.unit}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+            </ScrollView>
+            <View style={styles.foodListShadowTop} />
+            <View style={styles.foodListShadowBottom} />
+          </View>
           <TouchableOpacity
             style={styles.closeButton}
             onPress={() => setShowFoodPicker(false)}
@@ -144,30 +152,32 @@ const DailyFoodLogScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Daily Food Log</Text>
-      <Text style={styles.subtitle}>Total Calories Today: {totalCalories}</Text>
+      <Text style={styles.subtitle}>Total Calories Today: <Text style={styles.caloriesHighlight}>{totalCalories}</Text></Text>
 
-      <View style={styles.inputContainer}>
+      <View style={styles.inputCard}>
         <TouchableOpacity
-          style={styles.foodSelector}
+          style={styles.foodSelectorFull}
           onPress={() => setShowFoodPicker(true)}
         >
           <Text style={selectedFood ? styles.selectedFoodText : styles.placeholderText}>
             {selectedFood ? selectedFood.name : 'Select food from inventory'}
           </Text>
         </TouchableOpacity>
-        <TextInput
-          style={styles.quantityInput}
-          placeholder="Qty"
-          value={quantity}
-          onChangeText={setQuantity}
-          keyboardType="numeric"
-        />
-        <TouchableOpacity 
-          style={styles.addButton}
-          onPress={addFoodItem}
-        >
-          <Text style={styles.addButtonText}>Add</Text>
-        </TouchableOpacity>
+        <View style={styles.inputRowBelow}>
+          <TextInput
+            style={styles.quantityInput}
+            placeholder="Qty"
+            value={quantity}
+            onChangeText={setQuantity}
+            keyboardType="numeric"
+          />
+          <TouchableOpacity 
+            style={styles.addButton}
+            onPress={addFoodItem}
+          >
+            <Text style={styles.addButtonText}>Add</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <FlatList
@@ -175,6 +185,7 @@ const DailyFoodLogScreen = () => {
         renderItem={renderFoodItem}
         keyExtractor={item => item.id}
         style={styles.list}
+        contentContainerStyle={{ paddingBottom: 32 }}
       />
 
       {renderFoodPicker()}
@@ -186,157 +197,231 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#F8F9FA',
   },
   title: {
-    fontSize: SIZES.xxlarge,
+    fontSize: 32,
     fontWeight: 'bold',
     marginBottom: 8,
-    color: COLORS.text,
+    color: '#2D3436',
   },
   subtitle: {
-    fontSize: SIZES.large,
-    color: COLORS.text,
+    fontSize: 18,
+    color: '#636E72',
     marginBottom: 20,
   },
-  inputContainer: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    alignItems: 'center',
+  caloriesHighlight: {
+    color: '#00B894',
+    fontWeight: 'bold',
+    fontSize: 18,
   },
-  foodSelector: {
-    flex: 4,
-    borderWidth: 1,
-    borderColor: COLORS.glaucous,
+  inputCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
     padding: 16,
-    marginRight: 8,
-    borderRadius: 5,
-    backgroundColor: COLORS.whiteSmoke,
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  foodSelectorFull: {
+    width: '100%',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    marginBottom: 10,
   },
   selectedFoodText: {
-    color: COLORS.text,
+    color: '#2D3436',
+    fontSize: 16,
   },
   placeholderText: {
-    color: COLORS.blackOlive,
+    color: '#A0A0A0',
+    fontSize: 16,
   },
   quantityInput: {
-    flex: 0.8,
-    borderWidth: 1,
-    borderColor: COLORS.glaucous,
-    padding: 16,
+    width: 60,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    padding: 12,
     marginRight: 8,
-    borderRadius: 5,
-    backgroundColor: COLORS.whiteSmoke,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    fontSize: 16,
+    textAlign: 'center',
   },
-  modalContainer: {
-    flex: 1,
+  addButton: {
+    backgroundColor: '#00B894',
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 8,
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    shadowColor: '#00B894',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  modalContent: {
-    width: '90%',
-    maxHeight: '80%',
-    backgroundColor: COLORS.background,
-    borderRadius: 10,
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: SIZES.large,
+  addButtonText: {
+    color: '#FFFFFF',
     fontWeight: 'bold',
-    marginBottom: 16,
-    color: COLORS.text,
+    fontSize: 16,
   },
-  foodList: {
-    maxHeight: 400,
-  },
-  foodOption: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.glaucous,
-  },
-  foodOptionName: {
-    fontSize: SIZES.medium,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  foodOptionDetails: {
-    fontSize: SIZES.small,
-    color: COLORS.blackOlive,
-    marginTop: 4,
-  },
-  closeButton: {
-    marginTop: 16,
-    padding: 16,
-    backgroundColor: COLORS.error,
-    borderRadius: 5,
-    alignItems: 'center',
-  },
-  closeButtonText: {
-    color: COLORS.whiteSmoke,
-    fontWeight: 'bold',
+  list: {
+    flex: 1,
   },
   foodItem: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.glaucous,
+    marginBottom: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.whiteSmoke,
-    marginBottom: 8,
-    borderRadius: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
   },
   foodItemContent: {
     flex: 1,
   },
   foodName: {
-    fontSize: SIZES.large,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 8,
-    color: COLORS.text,
+    color: '#2D3436',
+    marginBottom: 4,
   },
   foodDetails: {
-    fontSize: SIZES.medium,
-    color: COLORS.blackOlive,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  button: {
-    flex: 1,
-    backgroundColor: COLORS.secondary,
-    padding: 16,
-    borderRadius: 5,
-    marginHorizontal: 8,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: COLORS.whiteSmoke,
-    fontWeight: 'bold',
+    fontSize: 15,
+    color: '#636E72',
   },
   deleteButton: {
-    padding: 16,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    marginLeft: 10,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
   },
   deleteButtonText: {
-    fontSize: SIZES.medium,
-    color: COLORS.error,
+    color: '#FF7675',
     fontWeight: 'bold',
+    fontSize: 15,
   },
-  addButton: {
-    backgroundColor: COLORS.primary,
-    padding: 16,
-    borderRadius: 5,
-    minWidth: 70,
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  addButtonText: {
-    color: COLORS.whiteSmoke,
+  modalContent: {
+    width: '85%',
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2D3436',
+    marginBottom: 16,
+  },
+  foodListScrollWrapper: {
+    width: '100%',
+    maxHeight: 250,
+    marginBottom: 16,
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  foodList: {
+    width: '100%',
+    maxHeight: 250,
+    marginBottom: 16,
+    paddingVertical: 2,
+  },
+  foodOptionCard: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  foodOptionName: {
+    fontSize: 16,
+    color: '#2D3436',
     fontWeight: 'bold',
   },
-  list: {
-    flex: 1,
+  foodOptionDetails: {
+    fontSize: 14,
+    color: '#636E72',
+  },
+  closeButton: {
+    backgroundColor: '#E8E8E8',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    marginTop: 8,
+  },
+  closeButtonText: {
+    color: '#636E72',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  inputRowBelow: {
+    flexDirection: 'row',
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 0,
+    marginBottom: 0,
+  },
+  foodListShadowTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 10,
+    backgroundColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    zIndex: 2,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  foodListShadowBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 10,
+    backgroundColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    zIndex: 2,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
 });
 
