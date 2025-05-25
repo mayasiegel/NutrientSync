@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Pressable, FlatList } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, Pressable, FlatList, Alert, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import FoodSearch from '../components/FoodSearch';
 
 const CATEGORIES = ['Fruits', 'Vegetables', 'Dairy', 'Meat', 'Other'];
 const CATEGORY_ICONS = {
@@ -59,6 +61,12 @@ export default function InventoryScreen() {
   });
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [search, setSearch] = useState('');
+  const [confirmation, setConfirmation] = useState('');
+  const [activeTab, setActiveTab] = useState('inventory'); // 'inventory' or 'add'
+  const [showExpModal, setShowExpModal] = useState(false);
+  const [pendingUsdaFood, setPendingUsdaFood] = useState(null);
+  const [expInput, setExpInput] = useState('');
+  const expInputRef = useRef();
 
   const openAddModal = () => {
     setEditId(null);
@@ -96,66 +104,133 @@ export default function InventoryScreen() {
     setModalVisible(false);
   };
 
+  // Add handler for FoodSearch
+  const handleAddFoodFromSearch = (item) => {
+    if (foods.some(f => f.fdcId === item.fdcId)) {
+      setConfirmation('Food already in inventory!');
+      setTimeout(() => setConfirmation(''), 2000);
+      return;
+    }
+    setPendingUsdaFood(item);
+    setShowExpModal(true);
+    setExpInput('');
+    setTimeout(() => expInputRef.current && expInputRef.current.focus(), 300);
+  };
+
+  // Confirm add USDA food (with or without expiration)
+  const confirmAddUsdaFood = (expiration) => {
+    const item = pendingUsdaFood;
+    const nutrients = item.foodNutrients || [];
+    setFoods([
+      ...foods,
+      {
+        id: Date.now().toString(),
+        fdcId: item.fdcId,
+        name: item.description,
+        category: 'Other',
+        quantity: 1,
+        expiration: expiration || '',
+        calories: nutrients.find(n => n.nutrientName === 'Energy')?.value || '',
+        protein: nutrients.find(n => n.nutrientName === 'Protein')?.value || '',
+        carbs: nutrients.find(n => n.nutrientName === 'Carbohydrate, by difference')?.value || '',
+        fat: nutrients.find(n => n.nutrientName === 'Total lipid (fat)')?.value || '',
+        fiber: nutrients.find(n => n.nutrientName === 'Fiber, total dietary')?.value || '',
+      },
+    ]);
+    setShowExpModal(false);
+    setPendingUsdaFood(null);
+    setConfirmation('Food added to inventory!');
+    setTimeout(() => setConfirmation(''), 2000);
+  };
+
+  // Filtered foods for inventory
   const filteredFoods = foods.filter(f =>
     (categoryFilter === 'All' || f.category === categoryFilter) &&
     (f.name.toLowerCase().includes(search.toLowerCase()) || f.category.toLowerCase().includes(search.toLowerCase()))
   );
 
+  // Render each inventory item
+  const renderInventoryItem = ({ item }) => (
+    <View style={styles.foodCard}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View>
+          <Text style={styles.foodName}>{item.name}</Text>
+          <Text style={styles.foodCategory}>{item.category}</Text>
+        </View>
+        <View style={styles.foodQty}><Text style={styles.foodQtyText}>{item.quantity}</Text></View>
+      </View>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+        <Text style={styles.expiryText}>Expires on <Text style={styles.expiryDate}>{formatDate(item.expiration)}</Text></Text>
+        <TouchableOpacity onPress={() => openEditModal(item)}><Text style={styles.editBtn}>Edit</Text></TouchableOpacity>
+      </View>
+      <View style={{ marginTop: 8 }}>
+        <Text style={styles.caloriesText}>Calories: {item.calories}</Text>
+      </View>
+    </View>
+  );
+
+  // Tab bar
+  const tabBar = (
+    <View style={styles.tabBar}>
+      <TouchableOpacity
+        style={[styles.tab, activeTab === 'inventory' && styles.activeTab]}
+        onPress={() => setActiveTab('inventory')}
+        activeOpacity={0.8}
+      >
+        <Text style={[styles.tabText, activeTab === 'inventory' && styles.activeTabText]}>My Inventory</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.tab, activeTab === 'add' && styles.activeTab]}
+        onPress={() => setActiveTab('add')}
+        activeOpacity={0.8}
+      >
+        <Text style={[styles.tabText, activeTab === 'add' && styles.activeTabText]}>Add Food</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-        <View style={styles.titleSection}>
-          <Text style={styles.appTitle}>Inventory</Text>
-          <Text style={styles.subtitle}>Your Digital Refrigerator</Text>
-        </View>
-        <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.actionButton}>
-            <Text style={styles.actionButtonText}>Scan Food</Text>
+      <Text style={styles.fridgeHeader}>Your Digital Refrigerator</Text>
+      {tabBar}
+      {activeTab === 'inventory' ? (
+        <View style={{ flex: 1, marginTop: 0, marginBottom: 0 }}>
+          <TextInput
+            style={styles.searchBar}
+            placeholder="Search your inventory..."
+            value={search}
+            onChangeText={setSearch}
+          />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 8, marginLeft: 8, marginBottom: 12 }}>
+            {['All', ...CATEGORIES].map(cat => (
+              <TouchableOpacity
+                key={cat}
+                style={[styles.categoryButton, categoryFilter === cat && styles.categoryButtonActive]}
+                onPress={() => setCategoryFilter(cat)}
+              >
+                <Text style={{ fontSize: 18 }}>{CATEGORY_ICONS[cat] || '🍽️'}</Text>
+                <Text style={[styles.categoryButtonText, categoryFilter === cat && styles.categoryButtonTextActive]}>{cat}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          <FlatList
+            data={filteredFoods}
+            renderItem={renderInventoryItem}
+            keyExtractor={item => item.id}
+            contentContainerStyle={{ paddingBottom: 100 }}
+            ListEmptyComponent={<Text style={{ textAlign: 'center', color: '#888', marginTop: 32 }}>No items in your inventory.</Text>}
+          />
+          <TouchableOpacity style={styles.addButton} onPress={openAddModal}>
+            <Text style={styles.addButtonText}>+ Add Custom Item</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={openAddModal}>
-            <Text style={styles.actionButtonText}>Custom Food</Text>
-          </TouchableOpacity>
+          {confirmation ? <Text style={styles.confirmation}>{confirmation}</Text> : null}
         </View>
-        <TextInput
-          style={styles.searchBar}
-          placeholder="Search items..."
-          value={search}
-          onChangeText={setSearch}
-        />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 8, marginLeft: 8 }}>
-          {['All', ...CATEGORIES].map(cat => (
-            <TouchableOpacity
-              key={cat}
-              style={[styles.categoryButton, categoryFilter === cat && styles.categoryButtonActive]}
-              onPress={() => setCategoryFilter(cat)}
-            >
-              <Text style={{ fontSize: 18 }}>{CATEGORY_ICONS[cat] || '🍽️'}</Text>
-              <Text style={[styles.categoryButtonText, categoryFilter === cat && styles.categoryButtonTextActive]}>{cat}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-        {filteredFoods.map(item => (
-          <View key={item.id} style={styles.foodCard}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <View>
-                <Text style={styles.foodName}>{item.name}</Text>
-                <Text style={styles.foodCategory}>{item.category}</Text>
-              </View>
-              <View style={styles.foodQty}><Text style={styles.foodQtyText}>{item.quantity}</Text></View>
-            </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-              <Text style={styles.expiryText}>Expires on <Text style={styles.expiryDate}>{formatDate(item.expiration)}</Text></Text>
-              <TouchableOpacity onPress={() => openEditModal(item)}><Text style={styles.editBtn}>Edit</Text></TouchableOpacity>
-            </View>
-            <View style={{ marginTop: 8 }}>
-              <Text style={styles.caloriesText}>Calories: {item.calories}</Text>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
-      <TouchableOpacity style={styles.addButton} onPress={openAddModal}>
-        <Text style={styles.addButtonText}>+ Add Item</Text>
-      </TouchableOpacity>
+      ) : (
+        <View style={styles.addFoodTabContainer}>
+          <FoodSearch onAdd={handleAddFoodFromSearch} />
+          {confirmation ? <Text style={styles.confirmation}>{confirmation}</Text> : null}
+        </View>
+      )}
       {/* Add/Edit Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
@@ -169,11 +244,11 @@ export default function InventoryScreen() {
             />
             <View style={styles.pickerRow}>
               <Text style={{ fontSize: 16, marginRight: 8 }}>Category:</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 8, marginLeft: 8, marginBottom: 12 }}>
                 {CATEGORIES.map(cat => (
                   <TouchableOpacity
                     key={cat}
-                    style={[styles.categoryButton, form.category === cat && styles.categoryButtonActive, { marginRight: 8 }]}
+                    style={[styles.categoryButton, form.category === cat && styles.categoryButtonActive]}
                     onPress={() => setForm({ ...form, category: cat })}
                   >
                     <Text style={{ fontSize: 18 }}>{CATEGORY_ICONS[cat] || '🍽️'}</Text>
@@ -213,12 +288,45 @@ export default function InventoryScreen() {
           </View>
         </View>
       </Modal>
+      {/* Expiration Date Modal for USDA food */}
+      <Modal visible={showExpModal} animationType="slide" transparent onRequestClose={() => setShowExpModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.expModalContent}>
+            <Text style={styles.modalTitle}>Expiration Date (Optional)</Text>
+            <Text style={{ color: '#555', marginBottom: 12, textAlign: 'center' }}>
+              Enter an expiration date for this food (YYYY-MM-DD), or skip to add without one.
+            </Text>
+            <TextInput
+              ref={expInputRef}
+              style={styles.input}
+              placeholder="YYYY-MM-DD (optional)"
+              value={expInput}
+              onChangeText={setExpInput}
+              autoFocus
+            />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }}>
+              <Pressable style={styles.cancelBtn} onPress={() => { setShowExpModal(false); setPendingUsdaFood(null); }}>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </Pressable>
+              <Pressable style={styles.saveBtn} onPress={() => confirmAddUsdaFood(expInput)}>
+                <Text style={styles.saveBtnText}>Add</Text>
+              </Pressable>
+              <Pressable style={styles.skipBtn} onPress={() => confirmAddUsdaFood('')}>
+                <Text style={styles.skipBtnText}>Skip</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f7f7f7' },
+  container: {
+    flex: 1,
+    backgroundColor: '#f7f7f7',
+  },
   titleSection: { alignItems: 'flex-start', marginTop: 32, marginBottom: 8, marginLeft: 16 },
   appTitle: { fontSize: 32, fontWeight: 'bold', color: '#222' },
   subtitle: { fontSize: 18, color: '#555', marginTop: 4 },
@@ -226,7 +334,7 @@ const styles = StyleSheet.create({
   actionButton: { backgroundColor: '#4A90E2', borderRadius: 14, paddingVertical: 10, paddingHorizontal: 20, marginHorizontal: 4 },
   actionButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
   searchBar: { backgroundColor: '#fff', borderRadius: 12, padding: 14, fontSize: 16, marginHorizontal: 16, marginBottom: 8, marginTop: 4 },
-  categoryButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f0f0f0', borderRadius: 12, paddingVertical: 8, paddingHorizontal: 16, marginRight: 8 },
+  categoryButton: { width: 100, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f0f0f0', borderRadius: 12, paddingVertical: 8, marginRight: 8, flexDirection: 'row', alignSelf: 'flex-start' },
   categoryButtonActive: { backgroundColor: '#4A90E2' },
   categoryButtonText: { fontSize: 16, color: '#222', marginLeft: 6, fontWeight: 'bold' },
   categoryButtonTextActive: { color: '#fff' },
@@ -250,4 +358,60 @@ const styles = StyleSheet.create({
   cancelBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
   saveBtn: { backgroundColor: '#22b573', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 24, marginLeft: 8 },
   saveBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
+  confirmation: { color: '#22b573', fontWeight: 'bold', fontSize: 18, marginTop: 16, marginBottom: 16, textAlign: 'center' },
+  sectionHeader: { fontSize: 18, fontWeight: 'bold', color: '#007AFF', marginLeft: 16, marginTop: 16, marginBottom: 8 },
+  tabBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    marginBottom: 8,
+    marginHorizontal: 16,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 12,
+    padding: 4,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 14,
+    marginHorizontal: 4,
+    alignItems: 'center',
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+  },
+  activeTab: {
+    backgroundColor: '#007AFF',
+  },
+  tabText: {
+    fontSize: 17,
+    color: '#333',
+    fontWeight: 'bold',
+  },
+  activeTabText: {
+    color: '#fff',
+  },
+  addFoodTabContainer: {
+    flex: 1,
+    paddingHorizontal: 8,
+    backgroundColor: '#f7f7f7',
+  },
+  expModalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    width: '85%',
+    alignItems: 'center',
+  },
+  skipBtn: {
+    backgroundColor: '#eee',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    marginLeft: 8,
+  },
+  skipBtnText: {
+    color: '#007AFF',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  fridgeHeader: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginTop: 24, marginBottom: 8, color: '#222' },
 }); 

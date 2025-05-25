@@ -13,7 +13,9 @@ import ProfileScreen from './src/screens/ProfileScreen';
 function ScanScreen() {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Text>Scan Screen</Text>
+      <Text style={{ fontSize: 18, color: '#888', textAlign: 'center' }}>
+        Barcode scanning coming soon!
+      </Text>
     </View>
   );
 }
