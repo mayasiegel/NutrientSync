@@ -60,15 +60,21 @@ export default function DailyScreen() {
   ]);
   const [pastLogs, setPastLogs] = useState(examplePastLogs);
   const [pastModal, setPastModal] = useState(false);
+  const [foodInput, setFoodInput] = useState('');
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const selectInputRef = useRef(null);
 
   // Calculate total calories for today
   const totalCalories = log.reduce((sum, item) => sum + item.calories * item.quantity, 0);
 
+  // Filter inventory foods by input
+  const filteredFoods = INVENTORY.filter(f =>
+    f.name.toLowerCase().includes(foodInput.toLowerCase())
+  );
+
   // Add food to today's log
   const handleAdd = () => {
-    const food = INVENTORY.find(f => f.id === selectedFoodId);
+    const food = INVENTORY.find(f => f.name.toLowerCase() === foodInput.toLowerCase());
     if (!food || !quantity || isNaN(Number(quantity))) return;
     setLog([
       ...log,
@@ -80,8 +86,8 @@ export default function DailyScreen() {
         time: getCurrentTime(),
       },
     ]);
+    setFoodInput('');
     setSelectedFoodId('');
-    setQuantity('');
   };
 
   // Delete food from today's log
@@ -107,34 +113,39 @@ export default function DailyScreen() {
         <View style={styles.addBox}>
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
-              <TouchableOpacity
-                ref={selectInputRef}
-                style={styles.selectInput}
-                onPress={() => setDropdownVisible(!dropdownVisible)}
-                activeOpacity={0.7}
-              >
-                <Text style={{ color: selectedFoodId ? '#222' : '#888' }}>
-                  {selectedFoodId ? INVENTORY.find(f => f.id === selectedFoodId)?.name : 'Select food from inventory'}
-                </Text>
-              </TouchableOpacity>
-              {dropdownVisible && (
-                <View style={styles.dropdownOverlay}>
-                  <View style={styles.dropdown}>
-                    {INVENTORY.map(food => (
-                      <TouchableOpacity
-                        key={food.id}
-                        style={styles.dropdownItem}
-                        onPress={() => {
-                          setSelectedFoodId(food.id);
-                          setDropdownVisible(false);
-                        }}
-                      >
-                        <Text style={styles.dropdownText}>{food.name}</Text>
-                      </TouchableOpacity>
-                    ))}
+              <View style={{ position: 'relative' }}>
+                <TextInput
+                  style={styles.selectInput}
+                  placeholder="Select food from inventory"
+                  value={foodInput}
+                  onChangeText={text => {
+                    setFoodInput(text);
+                    setDropdownVisible(true);
+                  }}
+                  onFocus={() => setDropdownVisible(true)}
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                />
+                {dropdownVisible && filteredFoods.length > 0 && (
+                  <View style={[styles.dropdownOverlay, { zIndex: 10, position: 'absolute', top: 48, left: 0, right: 0 }]}> 
+                    <View style={styles.dropdown}>
+                      {filteredFoods.map(food => (
+                        <TouchableOpacity
+                          key={food.id}
+                          style={styles.dropdownItem}
+                          onPress={() => {
+                            setFoodInput(food.name);
+                            setSelectedFoodId(food.id);
+                            setDropdownVisible(false);
+                          }}
+                        >
+                          <Text style={styles.dropdownText}>{food.name}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
                   </View>
-                </View>
-              )}
+                )}
+              </View>
             </View>
           </View>
           <View style={[styles.row, { marginTop: 8 }]}>

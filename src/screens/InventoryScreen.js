@@ -201,7 +201,7 @@ export default function InventoryScreen() {
             value={search}
             onChangeText={setSearch}
           />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 8, marginLeft: 8, marginBottom: 12 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, marginBottom: 12 }} contentContainerStyle={{ paddingVertical: 8, paddingHorizontal: 16, alignItems: 'center' }}>
             {['All', ...CATEGORIES].map(cat => (
               <TouchableOpacity
                 key={cat}
@@ -244,7 +244,7 @@ export default function InventoryScreen() {
             />
             <View style={styles.pickerRow}>
               <Text style={{ fontSize: 16, marginRight: 8 }}>Category:</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 8, marginLeft: 8, marginBottom: 12 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ paddingVertical: 8, paddingHorizontal: 16, alignItems: 'center' }}>
                 {CATEGORIES.map(cat => (
                   <TouchableOpacity
                     key={cat}
@@ -334,7 +334,20 @@ const styles = StyleSheet.create({
   actionButton: { backgroundColor: '#4A90E2', borderRadius: 14, paddingVertical: 10, paddingHorizontal: 20, marginHorizontal: 4 },
   actionButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
   searchBar: { backgroundColor: '#fff', borderRadius: 12, padding: 14, fontSize: 16, marginHorizontal: 16, marginBottom: 8, marginTop: 4 },
-  categoryButton: { width: 100, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f0f0f0', borderRadius: 12, paddingVertical: 8, marginRight: 8, flexDirection: 'row', alignSelf: 'flex-start' },
+  
+  
+  categoryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginRight: 8,
+  },
+  
+  
   categoryButtonActive: { backgroundColor: '#4A90E2' },
   categoryButtonText: { fontSize: 16, color: '#222', marginLeft: 6, fontWeight: 'bold' },
   categoryButtonTextActive: { color: '#fff' },

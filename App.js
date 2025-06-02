@@ -8,17 +8,8 @@ import InventoryScreen from './src/screens/InventoryScreen';
 import DailyScreen from './src/screens/DailyScreen';
 import NutrientsScreen from './src/screens/NutrientsScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import ScanScreen from './src/screens/ScanScreen';
 
-// Stub screens
-function ScanScreen() {
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontSize: 18, color: '#888', textAlign: 'center' }}>
-        Barcode scanning coming soon!
-      </Text>
-    </View>
-  );
-}
 
 const Tab = createBottomTabNavigator();
 
