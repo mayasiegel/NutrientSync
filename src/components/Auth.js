@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Alert, StyleSheet, View, AppState } from 'react-native'
 import { supabase } from '../lib/supabase'
 import { Button, Input } from '@rneui/themed'
+import CompleteProfile from './CompleteProfile'
 
 // Tells Supabase Auth to continuously refresh the session automatically if
 // the app is in the foreground. When this is added, you will continue to receive
@@ -15,35 +16,47 @@ AppState.addEventListener('change', (state) => {
   }
 })
 
-export default function Auth() {
+export default function Auth({ onAuthComplete }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showProfile, setShowProfile] = useState(false)
+  const [newUser, setNewUser] = useState(null)
 
   async function signInWithEmail() {
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: { user }, error } = await supabase.auth.signInWithPassword({
       email: email,
       password: password,
     })
-
-    if (error) Alert.alert(error.message)
+    if (error) {
+      Alert.alert(error.message)
+      setLoading(false)
+      return
+    }
+    if (user) {
+      setNewUser(user)
+      setShowProfile(true)
+    }
     setLoading(false)
   }
 
   async function signUpWithEmail() {
     setLoading(true)
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email: email,
       password: password,
     })
-
     if (error) Alert.alert(error.message)
-    if (!session) Alert.alert('Please check your inbox for email verification!')
+    else Alert.alert('Check your inbox for a verification email before logging in.')
     setLoading(false)
+  }
+
+  if (showProfile && newUser) {
+    return <CompleteProfile user={newUser} onComplete={() => {
+      setShowProfile(false)
+      if (onAuthComplete) onAuthComplete()
+    }} />
   }
 
   return (
@@ -73,7 +86,7 @@ export default function Auth() {
         <Button title="Sign in" disabled={loading} onPress={() => signInWithEmail()} />
       </View>
       <View style={styles.verticallySpaced}>
-        <Button title="Sign up" disabled={loading} onPress={() => signUpWithEmail()} />
+        <Button title="Create Account" disabled={loading} onPress={() => signUpWithEmail()} />
       </View>
     </View>
   )
