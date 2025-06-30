@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, Alert, ScrollView, TouchableOpacity, Image, Modal, Pressable } from 'react-native';
 import { supabase } from '../lib/supabase';
+import { getCurrentSeason, getSeasonDescription } from '../lib/sportSeasons';
+
+const GOALS = ['Gain Weight', 'Lose Weight', 'Maintain Weight', 'Build Muscle', 'Improve Performance'];
 
 export default function ProfileScreen({ route }) {
   const { session } = route.params;
@@ -17,8 +20,11 @@ export default function ProfileScreen({ route }) {
     height_feet: '',
     height_inches: '',
     sport: '',
-    activity_level: ''
+    activity_level: '',
+    goal: '',
+    season: ''
   });
+  const [goalModal, setGoalModal] = useState(false);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -42,6 +48,8 @@ export default function ProfileScreen({ route }) {
           height_inches: data?.height_inches ? data.height_inches.toString() : '',
           sport: data?.sport || '',
           activity_level: data?.activity_level || '',
+          goal: data?.goal || '',
+          season: data?.season || '',
         });
       }
     }
@@ -83,12 +91,88 @@ export default function ProfileScreen({ route }) {
       </View>
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>👱 Personal Information</Text>
-          <TouchableOpacity onPress={() => setEditing(editing === 'personal' ? false : 'personal')}>
-            <Text style={styles.editBtn}>{editing === 'personal' ? 'Cancel' : 'Edit'}</Text>
+          <Text style={styles.cardTitle}>🎯 Goals & Season</Text>
+          <TouchableOpacity onPress={() => setEditing(editing === 'goals' ? false : 'goals')}>
+            <Text style={styles.editBtn}>{editing === 'goals' ? 'Cancel' : 'Edit'}</Text>
           </TouchableOpacity>
         </View>
-        {editing === 'personal' ? (
+        {editing === 'goals' ? (
+          <>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Nutrition Goal</Text>
+              <TouchableOpacity
+                style={styles.selector}
+                onPress={() => setGoalModal(true)}
+              >
+                <Text style={form.goal ? styles.selectorText : styles.selectorPlaceholder}>
+                  {form.goal || 'Select your goal'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <Modal visible={goalModal} animationType="slide" transparent>
+              <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                  <Text style={styles.modalTitle}>Select Nutrition Goal</Text>
+                  {GOALS.map((g) => (
+                    <Pressable
+                      key={g}
+                      style={styles.modalOption}
+                      onPress={() => {
+                        setForm(f => ({ ...f, goal: g }));
+                        setGoalModal(false);
+                      }}
+                    >
+                      <Text style={styles.modalOptionText}>{g}</Text>
+                    </Pressable>
+                  ))}
+                  <Pressable style={styles.modalCancelBtn} onPress={() => setGoalModal(false)}>
+                    <Text style={styles.modalCancelText}>Cancel</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </Modal>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Current Season</Text>
+              <TextInput
+                style={styles.inputInline}
+                value={form.season}
+                onChangeText={v => setForm(f => ({ ...f, season: v }))}
+                placeholder="e.g., Inseason, Offseason"
+                placeholderTextColor="#aaa"
+              />
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 }}>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleSave}><Text style={styles.saveBtnText}>Save</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditing(false)}><Text style={styles.cancelBtnText}>Cancel</Text></TouchableOpacity>
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Nutrition Goal</Text>
+              <Text style={styles.infoValue}>{profile.goal || 'Not set'}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Current Season</Text>
+              <Text style={styles.infoValue}>{profile.season || 'Not set'}</Text>
+            </View>
+            {profile.sport && profile.sport !== 'None' && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Sport Season</Text>
+                <Text style={styles.infoValue}>{getSeasonDescription(profile.sport)}</Text>
+              </View>
+            )}
+          </>
+        )}
+      </View>
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>👤 Basic Info</Text>
+          <TouchableOpacity onPress={() => setEditing(editing === 'basic' ? false : 'basic')}>
+            <Text style={styles.editBtn}>{editing === 'basic' ? 'Cancel' : 'Edit'}</Text>
+          </TouchableOpacity>
+        </View>
+        {editing === 'basic' ? (
           <>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Name</Text>
@@ -108,6 +192,7 @@ export default function ProfileScreen({ route }) {
                 onChangeText={v => setForm(f => ({ ...f, age: v }))}
                 placeholder="Age"
                 placeholderTextColor="#aaa"
+                keyboardType="numeric"
               />
             </View>
             <View style={styles.infoRow}>
@@ -315,4 +400,63 @@ const styles = StyleSheet.create({
   statsCol: { flex: 1, alignItems: 'center' },
   statsValue: { fontSize: 22, fontWeight: 'bold', color: '#205081' },
   statsLabel: { fontSize: 15, color: '#555', marginTop: 2 },
+  selector: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 8,
+    fontSize: 16,
+    backgroundColor: '#f7f7f7',
+    marginLeft: 8,
+  },
+  selectorText: {
+    color: '#222',
+    fontWeight: 'bold',
+  },
+  selectorPlaceholder: {
+    color: '#aaa',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 16,
+    width: '80%',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#222',
+    marginBottom: 20,
+  },
+  modalOption: {
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  modalOptionText: {
+    fontSize: 16,
+    color: '#222',
+    fontWeight: 'bold',
+  },
+  modalCancelBtn: {
+    backgroundColor: '#205081',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+  },
+  modalCancelText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
 }); 

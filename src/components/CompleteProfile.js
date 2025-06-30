@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Button, Alert, ScrollView, TouchableOpacity, Pressable, Modal } from 'react-native';
 import { supabase } from '../lib/supabase';
+import { getCurrentSeason, getSeasonDescription, getAvailableSports } from '../lib/sportSeasons';
 
 const GENDERS = ['Woman', 'Man', 'Prefer Not to Say'];
-const SPORTS = ['None', 'Basketball', 'Soccer', 'Swimming', 'Running', 'Tennis'];
+const SPORTS = ['None', 'Basketball', 'Soccer', 'Swimming', 'Running', 'Tennis', 'Football', 'Baseball', 'Volleyball', 'Track & Field', 'Cross Country', 'Wrestling', 'Golf', 'Lacrosse', 'Hockey'];
 const ACTIVITIES = ['Sedentary', 'Lightly Active', 'Active'];
+const GOALS = ['Gain Weight', 'Lose Weight', 'Maintain Weight', 'Build Muscle', 'Improve Performance'];
 
 export default function CompleteProfile({ user, onComplete }) {
   const [currentPage, setCurrentPage] = useState(1);
@@ -24,9 +26,21 @@ export default function CompleteProfile({ user, onComplete }) {
   const [heightInches, setHeightInches] = useState('');
   const [sport, setSport] = useState('');
   const [activityLevel, setActivityLevel] = useState('');
+  const [goal, setGoal] = useState('');
+  const [season, setSeason] = useState('');
   
   // Modal states
   const [modal, setModal] = useState(null);
+
+  // Auto-detect season when sport changes
+  React.useEffect(() => {
+    if (sport && sport !== 'None') {
+      const currentSeason = getCurrentSeason(sport);
+      setSeason(currentSeason);
+    } else {
+      setSeason('Offseason');
+    }
+  }, [sport]);
 
   function calculateBMI() {
     if (!weight || !heightFeet || !heightInches) return null;
@@ -38,7 +52,7 @@ export default function CompleteProfile({ user, onComplete }) {
 
   async function handleSave() {
     console.log('handleSave called');
-    console.log('Form values:', { name, age, gender, weight, heightFeet, heightInches, activityLevel });
+    console.log('Form values:', { name, age, gender, weight, heightFeet, heightInches, activityLevel, goal, season });
     
     setLoading(true);
     
@@ -51,6 +65,7 @@ export default function CompleteProfile({ user, onComplete }) {
     if (!heightFeet || heightFeet.trim() === '') missingFields.push('Height (feet)');
     if (!heightInches || heightInches.trim() === '') missingFields.push('Height (inches)');
     if (!activityLevel || activityLevel.trim() === '') missingFields.push('Activity Level');
+    if (!goal || goal.trim() === '') missingFields.push('Goal');
     
     if (missingFields.length > 0) {
       console.log('Missing fields:', missingFields);
@@ -77,6 +92,8 @@ export default function CompleteProfile({ user, onComplete }) {
       bmi: parseFloat(bmi),
       sport,
       activity_level: activityLevel,
+      goal,
+      season,
       updated_at: new Date(),
     };
     
@@ -218,26 +235,37 @@ export default function CompleteProfile({ user, onComplete }) {
           </Text>
         </TouchableOpacity>
         
-        <View style={styles.buttonRow}>
-          <TouchableOpacity 
-            style={styles.backButton} 
-            onPress={() => setCurrentPage(1)}
-          >
-            <Text style={styles.backButtonText}>Back</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.saveButton} 
-            onPress={() => {
-              console.log('Save button pressed!');
-              handleSave();
-            }}
-            disabled={loading}
-          >
-            <Text style={styles.saveButtonText}>
-              {loading ? "Saving..." : "Complete Profile"}
+        <Text style={styles.label}>Nutrition Goal *</Text>
+        <TouchableOpacity 
+          style={styles.selector} 
+          onPress={() => setModal('goal')}
+        >
+          <Text style={goal ? styles.selectorText : styles.selectorPlaceholder}>
+            {goal || 'Select your goal'}
+          </Text>
+        </TouchableOpacity>
+        
+        <Text style={styles.label}>Current Season</Text>
+        <View style={styles.seasonContainer}>
+          <Text style={styles.seasonText}>
+            {sport && sport !== 'None' ? season : 'No sport selected'}
+          </Text>
+          {sport && sport !== 'None' && (
+            <Text style={styles.seasonDescription}>
+              {getSeasonDescription(sport)}
             </Text>
-          </TouchableOpacity>
+          )}
         </View>
+        
+        <TouchableOpacity 
+          style={[styles.saveButton, loading && styles.saveButtonDisabled]} 
+          onPress={handleSave}
+          disabled={loading}
+        >
+          <Text style={styles.saveButtonText}>
+            {loading ? 'Saving...' : 'Complete Profile'}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     );
   }
@@ -316,6 +344,30 @@ export default function CompleteProfile({ user, onComplete }) {
                 }}
               >
                 <Text style={styles.modalOptionText}>{a}</Text>
+              </Pressable>
+            ))}
+            <Pressable style={styles.modalCancelBtn} onPress={() => setModal(null)}>
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+      
+      {/* Goal Modal */}
+      <Modal visible={modal === 'goal'} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Nutrition Goal</Text>
+            {GOALS.map((g) => (
+              <Pressable
+                key={g}
+                style={styles.modalOption}
+                onPress={() => {
+                  setGoal(g);
+                  setModal(null);
+                }}
+              >
+                <Text style={styles.modalOptionText}>{g}</Text>
               </Pressable>
             ))}
             <Pressable style={styles.modalCancelBtn} onPress={() => setModal(null)}>
@@ -418,6 +470,11 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   saveButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  saveButtonDisabled: {
+    backgroundColor: '#ccc',
+    borderColor: '#999',
+    borderWidth: 1
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -447,5 +504,23 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 24
   },
-  modalCancelText: { color: '#fff', fontWeight: 'bold', fontSize: 16 }
+  modalCancelText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  seasonContainer: {
+    backgroundColor: '#f0f8ff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20
+  },
+  seasonText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+    marginBottom: 4
+  },
+  seasonDescription: {
+    fontSize: 14,
+    color: '#666'
+  }
 }); 

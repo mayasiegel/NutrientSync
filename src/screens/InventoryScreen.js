@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, Pressable, FlatList, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, Pressable, FlatList, Alert, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FoodSearch from '../components/FoodSearch';
 
@@ -48,7 +48,16 @@ function formatDate(dateStr) {
   return `${month}/${day}/${year}`;
 }
 
-export default function InventoryScreen() {
+const filters = ['All', 'High Protein', 'Complex Carbs', 'Electrolytes'];
+const mockInventory = [
+  { name: 'Chicken Breast', expires: 'in 3 days', image: require('../../assets/icon.png'), category: 'High Protein' },
+  { name: 'Sweet Potatoes', expires: 'in 7 days', image: require('../../assets/icon.png'), category: 'Complex Carbs' },
+  { name: 'Avocados', expires: 'in 10 days', image: require('../../assets/icon.png'), category: 'Electrolytes' },
+  { name: 'Salmon', expires: 'in 5 days', image: require('../../assets/icon.png'), category: 'High Protein' },
+  { name: 'Quinoa', expires: 'in 12 days', image: require('../../assets/icon.png'), category: 'Complex Carbs' },
+];
+
+export default function InventoryScreen({ navigation }) {
   const [foods, setFoods] = useState(initialFoods);
   const [modalVisible, setModalVisible] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -67,6 +76,7 @@ export default function InventoryScreen() {
   const [pendingUsdaFood, setPendingUsdaFood] = useState(null);
   const [expInput, setExpInput] = useState('');
   const expInputRef = useRef();
+  const [selectedFilter, setSelectedFilter] = useState('All');
 
   const openAddModal = () => {
     setEditId(null);
@@ -149,6 +159,12 @@ export default function InventoryScreen() {
     (f.name.toLowerCase().includes(search.toLowerCase()) || f.category.toLowerCase().includes(search.toLowerCase()))
   );
 
+  const filteredInventory = mockInventory.filter(item => {
+    const matchesFilter = selectedFilter === 'All' || item.category === selectedFilter;
+    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
+
   // Render each inventory item
   const renderInventoryItem = ({ item }) => (
     <View style={styles.foodCard}>
@@ -191,46 +207,60 @@ export default function InventoryScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.fridgeHeader}>Your Digital Refrigerator</Text>
-      {tabBar}
-      {activeTab === 'inventory' ? (
-        <View style={{ flex: 1, marginTop: 0, marginBottom: 0 }}>
-          <TextInput
-            style={styles.searchBar}
-            placeholder="Search your inventory..."
-            value={search}
-            onChangeText={setSearch}
-          />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, marginBottom: 12 }} contentContainerStyle={{ paddingVertical: 8, paddingHorizontal: 16, alignItems: 'center' }}>
-            {['All', ...CATEGORIES].map(cat => (
-              <TouchableOpacity
-                key={cat}
-                style={[styles.categoryButton, categoryFilter === cat && styles.categoryButtonActive]}
-                onPress={() => setCategoryFilter(cat)}
-              >
-                <Text style={{ fontSize: 18 }}>{CATEGORY_ICONS[cat] || '🍽️'}</Text>
-                <Text style={[styles.categoryButtonText, categoryFilter === cat && styles.categoryButtonTextActive]}>{cat}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-          <FlatList
-            data={filteredFoods}
-            renderItem={renderInventoryItem}
-            keyExtractor={item => item.id}
-            contentContainerStyle={{ paddingBottom: 100 }}
-            ListEmptyComponent={<Text style={{ textAlign: 'center', color: '#888', marginTop: 32 }}>No items in your inventory.</Text>}
-          />
-          <TouchableOpacity style={styles.addButton} onPress={openAddModal}>
-            <Text style={styles.addButtonText}>+ Add Custom Item</Text>
+      {/* Header */}
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>My Inventory</Text>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity style={styles.scanBtn} onPress={() => navigation.navigate('Scan')}>
+            <Text style={styles.scanBtnText}>📷</Text>
           </TouchableOpacity>
-          {confirmation ? <Text style={styles.confirmation}>{confirmation}</Text> : null}
+          <TouchableOpacity style={styles.addBtn} onPress={() => navigation.navigate('AddFood')}>
+            <Text style={styles.addBtnText}>+</Text>
+          </TouchableOpacity>
         </View>
-      ) : (
-        <View style={styles.addFoodTabContainer}>
-          <FoodSearch onAdd={handleAddFoodFromSearch} />
-          {confirmation ? <Text style={styles.confirmation}>{confirmation}</Text> : null}
-        </View>
-      )}
+      </View>
+
+      {/* Search Bar */}
+      <View style={styles.searchBarContainer}>
+        <TextInput
+          style={styles.searchBar}
+          placeholder="Search"
+          placeholderTextColor="#888"
+          value={search}
+          onChangeText={setSearch}
+        />
+      </View>
+
+      {/* Filter Chips */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow}>
+        {filters.map(filter => (
+          <TouchableOpacity
+            key={filter}
+            style={[styles.filterChip, selectedFilter === filter && styles.filterChipSelected]}
+            onPress={() => setSelectedFilter(filter)}
+          >
+            <Text style={[styles.filterChipText, selectedFilter === filter && styles.filterChipTextSelected]}>{filter}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* Inventory List */}
+      <FlatList
+        data={filteredInventory}
+        keyExtractor={item => item.name}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 32 }}
+        renderItem={({ item }) => (
+          <View style={styles.foodCard}>
+            <Image source={item.image} style={styles.foodImg} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.foodName}>{item.name}</Text>
+              <Text style={styles.foodExpiry}>Expires {item.expires}</Text>
+            </View>
+          </View>
+        )}
+        ListEmptyComponent={<Text style={styles.emptyText}>No items found.</Text>}
+      />
+
       {/* Add/Edit Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
@@ -327,41 +357,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f7f7f7',
   },
-  titleSection: { alignItems: 'flex-start', marginTop: 32, marginBottom: 8, marginLeft: 16 },
-  appTitle: { fontSize: 32, fontWeight: 'bold', color: '#222' },
-  subtitle: { fontSize: 18, color: '#555', marginTop: 4 },
-  buttonRow: { flexDirection: 'row', justifyContent: 'space-around', marginVertical: 16 },
-  actionButton: { backgroundColor: '#4A90E2', borderRadius: 14, paddingVertical: 10, paddingHorizontal: 20, marginHorizontal: 4 },
-  actionButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
-  searchBar: { backgroundColor: '#fff', borderRadius: 12, padding: 14, fontSize: 16, marginHorizontal: 16, marginBottom: 8, marginTop: 4 },
-  
-  
-  categoryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f0f0f0',
-    borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginRight: 8,
-  },
-  
-  
-  categoryButtonActive: { backgroundColor: '#4A90E2' },
-  categoryButtonText: { fontSize: 16, color: '#222', marginLeft: 6, fontWeight: 'bold' },
-  categoryButtonTextActive: { color: '#fff' },
-  foodCard: { backgroundColor: '#fff', borderRadius: 16, marginHorizontal: 16, marginBottom: 16, padding: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
-  foodName: { fontSize: 22, fontWeight: 'bold', color: '#222' },
-  foodCategory: { fontSize: 16, color: '#888', marginTop: 2 },
-  foodQty: { backgroundColor: '#f0f0f0', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 4 },
-  foodQtyText: { fontSize: 18, color: '#22b573', fontWeight: 'bold' },
-  expiryText: { fontSize: 16, color: '#222' },
-  expiryDate: { color: '#e74c3c', fontWeight: 'bold' },
-  editBtn: { color: '#22b573', fontWeight: 'bold', fontSize: 16 },
-  caloriesText: { fontSize: 15, color: '#555' },
-  addButton: { position: 'absolute', right: 24, bottom: 32, backgroundColor: '#22b573', borderRadius: 24, paddingVertical: 10, paddingHorizontal: 20, elevation: 3 },
-  addButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 32, marginBottom: 8, marginHorizontal: 20 },
+  title: { fontSize: 24, fontWeight: 'bold', color: '#222' },
+  headerButtons: { flexDirection: 'row', alignItems: 'center' },
+  scanBtn: { backgroundColor: '#4CAF50', borderRadius: 16, width: 36, height: 36, alignItems: 'center', justifyContent: 'center', marginRight: 8 },
+  scanBtnText: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+  addBtn: { backgroundColor: '#2196f3', borderRadius: 16, width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  addBtnText: { color: '#fff', fontSize: 28, fontWeight: 'bold', marginTop: -2 },
+  searchBarContainer: { marginHorizontal: 20, marginBottom: 8 },
+  searchBar: { backgroundColor: '#f0f2f5', borderRadius: 14, paddingHorizontal: 18, paddingVertical: 12, fontSize: 16, color: '#222' },
+  filterRow: { flexGrow: 0, marginLeft: 20, marginBottom: 8 },
+  filterChip: { backgroundColor: '#f0f2f5', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8, marginRight: 10 },
+  filterChipSelected: { backgroundColor: '#2196f3' },
+  filterChipText: { color: '#222', fontSize: 15 },
+  filterChipTextSelected: { color: '#fff', fontWeight: 'bold' },
+  foodCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 14, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
+  foodImg: { width: 48, height: 48, borderRadius: 24, marginRight: 16, backgroundColor: '#e0e0e0' },
+  foodName: { fontSize: 17, fontWeight: 'bold', color: '#222' },
+  foodExpiry: { fontSize: 14, color: '#888', marginTop: 2 },
+  emptyText: { textAlign: 'center', color: '#888', marginTop: 32, fontSize: 16 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { backgroundColor: '#fff', borderRadius: 24, padding: 24, width: '90%', alignItems: 'center' },
   modalTitle: { fontSize: 24, fontWeight: 'bold', color: '#222', marginBottom: 16 },

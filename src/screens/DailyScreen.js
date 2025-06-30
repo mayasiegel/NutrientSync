@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Pressable, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Pressable, Dimensions, FlatList } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
 // Example inventory foods (in a real app, this would come from context or props)
@@ -186,7 +186,7 @@ export default function DailyScreen() {
             <Text style={styles.modalTitle}>Past 7 Days Food Logs</Text>
             <ScrollView style={{ width: '100%' }}>
               {pastLogs.map((log, idx) => (
-                <View key={log.date} style={{ marginBottom: 18 }}>
+                <View key={log.date} style={styles.pastLogCard}>
                   <Text style={styles.pastDate}>{formatDate(log.date)}</Text>
                   <Text style={styles.pastCalories}>Total Calories: {log.items.reduce((sum, i) => sum + i.calories * i.quantity, 0)}</Text>
                   <Text style={styles.pastItems}>{log.items.length} items</Text>
@@ -205,30 +205,32 @@ export default function DailyScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f7f7f7' },
-  titleSection: { alignItems: 'flex-start', marginTop: 32, marginBottom: 8, marginLeft: 16 },
+  titleSection: { alignItems: 'flex-start', marginTop: 36, marginBottom: 12, marginLeft: 20 },
   appTitle: { fontSize: 32, fontWeight: 'bold', color: '#222' },
   subtitle: { fontSize: 18, color: '#555', marginTop: 4 },
   caloriesTotal: { color: '#22b573', fontWeight: 'bold', fontSize: 20 },
-  addBox: { backgroundColor: '#fff', borderRadius: 16, marginHorizontal: 16, marginBottom: 20, padding: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  addBox: { backgroundColor: '#fff', borderRadius: 18, marginHorizontal: 20, marginBottom: 24, padding: 18, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   row: { flexDirection: 'row', alignItems: 'center' },
-  selectInput: { backgroundColor: '#f0f0f0', borderRadius: 8, padding: 12, marginBottom: 8 },
-  qtyInput: { backgroundColor: '#f0f0f0', borderRadius: 8, padding: 12, width: 60, marginRight: 8, fontSize: 16 },
-  addBtn: { backgroundColor: '#22b573', borderRadius: 8, paddingVertical: 12, paddingHorizontal: 18, marginRight: 8 },
+  selectInput: { backgroundColor: '#f0f0f0', borderRadius: 10, padding: 14, fontSize: 16, marginBottom: 0 },
+  qtyInput: { backgroundColor: '#f0f0f0', borderRadius: 10, padding: 14, width: 70, marginRight: 10, fontSize: 16 },
+  addBtn: { backgroundColor: '#2196f3', borderRadius: 10, paddingVertical: 12, paddingHorizontal: 20, marginRight: 8 },
   addBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  pastBtn: { backgroundColor: '#ccc', borderRadius: 8, paddingVertical: 12, paddingHorizontal: 18 },
-  pastBtnText: { color: '#444', fontWeight: 'bold', fontSize: 16 },
-  foodCard: { backgroundColor: '#fff', borderRadius: 16, marginHorizontal: 16, marginBottom: 16, padding: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
-  foodName: { fontSize: 22, fontWeight: 'bold', color: '#222' },
-  foodDetails: { fontSize: 16, color: '#444', marginTop: 4 },
-  deleteBtn: { color: '#e74c3c', fontWeight: 'bold', fontSize: 18 },
+  pastBtn: { backgroundColor: '#eee', borderRadius: 10, paddingVertical: 12, paddingHorizontal: 20 },
+  pastBtnText: { color: '#205081', fontWeight: 'bold', fontSize: 16 },
+  foodCard: { backgroundColor: '#fff', borderRadius: 16, marginHorizontal: 20, marginBottom: 16, padding: 18, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  foodName: { fontSize: 20, fontWeight: 'bold', color: '#222' },
+  foodDetails: { fontSize: 15, color: '#555', marginTop: 4 },
+  deleteBtn: { color: '#e74c3c', fontWeight: 'bold', fontSize: 16 },
+  emptyText: { textAlign: 'center', color: '#888', marginTop: 32, fontSize: 16 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { backgroundColor: '#fff', borderRadius: 24, padding: 24, width: '90%', alignItems: 'center' },
+  modalContent: { backgroundColor: '#fff', borderRadius: 24, padding: 28, width: '90%', alignItems: 'center' },
   modalTitle: { fontSize: 24, fontWeight: 'bold', color: '#222', marginBottom: 16 },
+  pastLogCard: { backgroundColor: '#f7fafd', borderRadius: 12, padding: 16, marginBottom: 14 },
   pastDate: { fontSize: 20, fontWeight: 'bold', color: '#222', marginBottom: 2 },
-  pastCalories: { fontSize: 16, color: '#444' },
+  pastCalories: { fontSize: 16, color: '#22b573', fontWeight: 'bold' },
   pastItems: { fontSize: 15, color: '#888', marginBottom: 8 },
-  closeBtn: { backgroundColor: '#ccc', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 24, marginTop: 16 },
-  closeBtnText: { color: '#444', fontWeight: 'bold', fontSize: 18 },
+  closeBtn: { backgroundColor: '#2196f3', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 28, marginTop: 16 },
+  closeBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
   dropdownOverlay: {
     position: 'absolute',
     top: 48,
@@ -239,7 +241,7 @@ const styles = StyleSheet.create({
   },
   dropdown: {
     backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 10,
     padding: 8,
     shadowColor: '#000',
     shadowOpacity: 0.1,

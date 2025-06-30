@@ -121,7 +121,11 @@ alter table profiles add column if not exists bmi decimal(4,2);
 alter table profiles add column if not exists sport text;
 alter table profiles add column if not exists activity_level text;
 
--- 9. Add constraints to existing columns (only if they don't exist)
+-- 9. Add goal and season columns for student athletes (if not exists)
+alter table profiles add column if not exists goal text;
+alter table profiles add column if not exists season text;
+
+-- 10. Add constraints to existing columns (only if they don't exist)
 do $$
 begin
   -- Add gender constraint if it doesn't exist
@@ -139,7 +143,7 @@ begin
     where constraint_name = 'profiles_sport_check'
   ) then
     alter table profiles add constraint profiles_sport_check 
-    check (sport in ('None', 'Basketball', 'Soccer', 'Swimming', 'Running', 'Tennis'));
+    check (sport in ('None', 'Basketball', 'Soccer', 'Swimming', 'Running', 'Tennis', 'Football', 'Baseball', 'Volleyball', 'Track & Field', 'Cross Country', 'Wrestling', 'Golf', 'Lacrosse', 'Hockey'));
   end if;
   
   -- Add activity_level constraint if it doesn't exist
@@ -150,9 +154,27 @@ begin
     alter table profiles add constraint profiles_activity_level_check 
     check (activity_level in ('Sedentary', 'Lightly Active', 'Active'));
   end if;
+  
+  -- Add goal constraint if it doesn't exist
+  if not exists (
+    select 1 from information_schema.check_constraints 
+    where constraint_name = 'profiles_goal_check'
+  ) then
+    alter table profiles add constraint profiles_goal_check 
+    check (goal in ('Gain Weight', 'Lose Weight', 'Maintain Weight', 'Build Muscle', 'Improve Performance'));
+  end if;
+  
+  -- Add season constraint if it doesn't exist
+  if not exists (
+    select 1 from information_schema.check_constraints 
+    where constraint_name = 'profiles_season_check'
+  ) then
+    alter table profiles add constraint profiles_season_check 
+    check (season in ('Offseason', 'Inseason', 'Pre-season', 'Post-season'));
+  end if;
 end $$;
 
--- 10. Add helpful comments
+-- 11. Add helpful comments
 comment on column profiles.gender is 'User gender for BMR calculations';
 comment on column profiles.weight_lbs is 'Weight in pounds for BMI and calorie calculations';
 comment on column profiles.height_feet is 'Height feet component';
@@ -160,6 +182,8 @@ comment on column profiles.height_inches is 'Height inches component';
 comment on column profiles.bmi is 'Calculated BMI value';
 comment on column profiles.sport is 'Primary sport/activity for calorie burn calculations';
 comment on column profiles.activity_level is 'General activity level for TDEE calculations';
+comment on column profiles.goal is 'Nutrition and fitness goal for meal planning';
+comment on column profiles.season is 'Current athletic season for nutrition adjustments';
 ```
 
 ## What This Script Does
@@ -172,6 +196,7 @@ comment on column profiles.activity_level is 'General activity level for TDEE ca
    - Basic info: username, age, location, diet, allergies
    - Health data: gender, weight, height, BMI
    - Activity data: sport, activity level
+   - **NEW: Goal and season data for student athletes**
 6. **Adds constraints** to ensure data integrity
 7. **Adds helpful comments** for documentation
 
@@ -180,6 +205,7 @@ comment on column profiles.activity_level is 'General activity level for TDEE ca
 1. The database will be ready for the nutrient calculation features
 2. New users will automatically get profile records created
 3. All the required fields will be available for the onboarding flow
+4. **Student athletes can now set goals and track their season status**
 
 ## Troubleshooting
 
