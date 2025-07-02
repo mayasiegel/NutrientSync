@@ -4,9 +4,9 @@ import { useFocusEffect } from '@react-navigation/native';
 
 // Example inventory foods (in a real app, this would come from context or props)
 const INVENTORY = [
-  { id: '1', name: 'Oatmeal', calories: 150, unit: 'bowl' },
-  { id: '2', name: 'Apple', calories: 95, unit: 'piece' },
-  { id: '3', name: 'Chicken Salad', calories: 350, unit: 'bowl' },
+  { id: '1', name: 'Oatmeal', calories: 150, protein: 5, carbs: 27, fat: 3, unit: 'bowl' },
+  { id: '2', name: 'Apple', calories: 95, protein: 0.5, carbs: 25, fat: 0.3, unit: 'piece' },
+  { id: '3', name: 'Chicken Salad', calories: 350, protein: 25, carbs: 8, fat: 22, unit: 'bowl' },
 ];
 
 const examplePastLogs = [
@@ -54,6 +54,9 @@ export default function DailyScreen() {
       name: 'Oatmeal',
       quantity: 1,
       calories: 150,
+      protein: 5,
+      carbs: 27,
+      fat: 3,
       unit: 'bowl',
       time: '08:00 AM',
     },
@@ -64,8 +67,11 @@ export default function DailyScreen() {
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const selectInputRef = useRef(null);
 
-  // Calculate total calories for today
+  // Calculate total calories and macros for today
   const totalCalories = log.reduce((sum, item) => sum + item.calories * item.quantity, 0);
+  const totalProtein = log.reduce((sum, item) => sum + (item.protein || 0) * item.quantity, 0);
+  const totalCarbs = log.reduce((sum, item) => sum + (item.carbs || 0) * item.quantity, 0);
+  const totalFat = log.reduce((sum, item) => sum + (item.fat || 0) * item.quantity, 0);
 
   // Filter inventory foods by input
   const filteredFoods = INVENTORY.filter(f =>
@@ -76,16 +82,19 @@ export default function DailyScreen() {
   const handleAdd = () => {
     const food = INVENTORY.find(f => f.name.toLowerCase() === foodInput.toLowerCase());
     if (!food || !quantity || isNaN(Number(quantity))) return;
-    setLog([
-      ...log,
-      {
-        name: food.name,
-        quantity: Number(quantity),
-        calories: food.calories,
-        unit: food.unit,
-        time: getCurrentTime(),
-      },
-    ]);
+            setLog([
+          ...log,
+          {
+            name: food.name,
+            quantity: Number(quantity),
+            calories: food.calories,
+            protein: food.protein || 0,
+            carbs: food.carbs || 0,
+            fat: food.fat || 0,
+            unit: food.unit,
+            time: getCurrentTime(),
+          },
+        ]);
     setFoodInput('');
     setSelectedFoodId('');
   };
@@ -108,7 +117,13 @@ export default function DailyScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }} keyboardShouldPersistTaps="handled">
         <View style={styles.titleSection}>
           <Text style={styles.appTitle}>Daily Food Log</Text>
-          <Text style={styles.subtitle}>Total Calories Today: <Text style={styles.caloriesTotal}>{totalCalories}</Text></Text>
+          <Text style={styles.subtitle}>Today's Totals:</Text>
+          <View style={styles.totalsContainer}>
+            <Text style={styles.totalText}>Calories: <Text style={styles.caloriesTotal}>{totalCalories}</Text></Text>
+            <Text style={styles.totalText}>Protein: <Text style={styles.proteinTotal}>{totalProtein.toFixed(1)}g</Text></Text>
+            <Text style={styles.totalText}>Carbs: <Text style={styles.carbsTotal}>{totalCarbs.toFixed(1)}g</Text></Text>
+            <Text style={styles.totalText}>Fat: <Text style={styles.fatTotal}>{totalFat.toFixed(1)}g</Text></Text>
+          </View>
         </View>
         <View style={styles.addBox}>
           <View style={styles.row}>
@@ -176,6 +191,9 @@ export default function DailyScreen() {
             <Text style={styles.foodDetails}>
               Quantity: {item.quantity} {item.unit} • {item.calories * item.quantity} cal total ({item.calories} cal/{item.unit}) • {item.time}
             </Text>
+            <Text style={styles.nutrientDetails}>
+              Protein: {(item.protein * item.quantity).toFixed(1)}g • Carbs: {(item.carbs * item.quantity).toFixed(1)}g • Fat: {(item.fat * item.quantity).toFixed(1)}g
+            </Text>
           </View>
         ))}
       </ScrollView>
@@ -208,7 +226,12 @@ const styles = StyleSheet.create({
   titleSection: { alignItems: 'flex-start', marginTop: 36, marginBottom: 12, marginLeft: 20 },
   appTitle: { fontSize: 32, fontWeight: 'bold', color: '#222' },
   subtitle: { fontSize: 18, color: '#555', marginTop: 4 },
-  caloriesTotal: { color: '#22b573', fontWeight: 'bold', fontSize: 20 },
+  totalsContainer: { marginTop: 8 },
+  totalText: { fontSize: 16, color: '#555', marginBottom: 2 },
+  caloriesTotal: { color: '#22b573', fontWeight: 'bold', fontSize: 18 },
+  proteinTotal: { color: '#e74c3c', fontWeight: 'bold', fontSize: 18 },
+  carbsTotal: { color: '#f39c12', fontWeight: 'bold', fontSize: 18 },
+  fatTotal: { color: '#9b59b6', fontWeight: 'bold', fontSize: 18 },
   addBox: { backgroundColor: '#fff', borderRadius: 18, marginHorizontal: 20, marginBottom: 24, padding: 18, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   row: { flexDirection: 'row', alignItems: 'center' },
   selectInput: { backgroundColor: '#f0f0f0', borderRadius: 10, padding: 14, fontSize: 16, marginBottom: 0 },
@@ -220,6 +243,7 @@ const styles = StyleSheet.create({
   foodCard: { backgroundColor: '#fff', borderRadius: 16, marginHorizontal: 20, marginBottom: 16, padding: 18, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   foodName: { fontSize: 20, fontWeight: 'bold', color: '#222' },
   foodDetails: { fontSize: 15, color: '#555', marginTop: 4 },
+  nutrientDetails: { fontSize: 14, color: '#666', marginTop: 4, fontStyle: 'italic' },
   deleteBtn: { color: '#e74c3c', fontWeight: 'bold', fontSize: 16 },
   emptyText: { textAlign: 'center', color: '#888', marginTop: 32, fontSize: 16 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'center', alignItems: 'center' },

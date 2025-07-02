@@ -4,14 +4,14 @@ import { supabase } from '../lib/supabase';
 import { getNutritionRecommendations } from '../lib/sportSeasons';
 
 const MACROS = [
-  { name: 'Protein', range: '80-120g', desc: 'Essential for muscle repair and growth.', amount: 90, target: 100 },
-  { name: 'Carbs', range: '200-300g', desc: 'Primary energy source for athletes.', amount: 220, target: 250 },
-  { name: 'Fat', range: '50-80g', desc: 'Supports hormone production and energy.', amount: 60, target: 70 },
+  { name: 'Protein', range: '80-120g', desc: 'Essential for muscle repair and growth.', target: 100 },
+  { name: 'Carbs', range: '200-300g', desc: 'Primary energy source for athletes.', target: 250 },
+  { name: 'Fat', range: '50-80g', desc: 'Supports hormone production and energy.', target: 70 },
 ];
 const MICROS = [
-  { name: 'Iron', range: '8-18mg', desc: 'Supports oxygen transport.', amount: 12, target: 18 },
-  { name: 'Calcium', range: '1000mg', desc: 'Essential for bone health.', amount: 800, target: 1000 },
-  { name: 'Vitamin C', range: '75-90mg', desc: 'Boosts immune system.', amount: 60, target: 90 },
+  { name: 'Iron', range: '8-18mg', desc: 'Supports oxygen transport.', target: 15, unit: 'mg' },
+  { name: 'Calcium', range: '1000mg', desc: 'Essential for bone health.', target: 1000, unit: 'mg' },
+  { name: 'Vitamin C', range: '75-90mg', desc: 'Boosts immune system.', target: 90, unit: 'mg' },
 ];
 
 export default function NutrientsScreen() {
@@ -20,6 +20,15 @@ export default function NutrientsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [recommendations, setRecommendations] = useState(null);
+  const [dailyTotals, setDailyTotals] = useState({
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0,
+    iron: 0,
+    calcium: 0,
+    vitaminC: 0,
+  });
 
   useEffect(() => {
     async function fetchProfileAndCalc() {
@@ -39,6 +48,9 @@ export default function NutrientsScreen() {
         setProfile(data);
         // Calculate recommendations using new goal and season data
         setRecommendations(calcRecommendations(data));
+        
+        // Calculate daily totals from food log
+        calculateDailyTotals();
       } catch (err) {
         setError(err.message || 'Failed to load profile.');
       } finally {
@@ -104,6 +116,71 @@ export default function NutrientsScreen() {
     };
   }
 
+  function calculateDailyTotals() {
+    // This would normally come from the daily log
+    // For now, using mock data that matches the daily screen
+    const dailyLog = [
+      {
+        name: 'Oatmeal',
+        quantity: 1,
+        calories: 150,
+        protein: 5,
+        carbs: 27,
+        fat: 3,
+        iron: 2.5,
+        calcium: 50,
+        vitaminC: 0,
+      },
+      {
+        name: 'Apple',
+        quantity: 1,
+        calories: 95,
+        protein: 0.5,
+        carbs: 25,
+        fat: 0.3,
+        iron: 0.2,
+        calcium: 6,
+        vitaminC: 8.4,
+      },
+      {
+        name: 'Chicken Salad',
+        quantity: 1,
+        calories: 350,
+        protein: 25,
+        carbs: 8,
+        fat: 22,
+        iron: 1.2,
+        calcium: 30,
+        vitaminC: 2,
+      },
+    ];
+
+    const totals = {
+      calories: dailyLog.reduce((sum, item) => sum + item.calories * item.quantity, 0),
+      protein: dailyLog.reduce((sum, item) => sum + (item.protein || 0) * item.quantity, 0),
+      carbs: dailyLog.reduce((sum, item) => sum + (item.carbs || 0) * item.quantity, 0),
+      fat: dailyLog.reduce((sum, item) => sum + (item.fat || 0) * item.quantity, 0),
+      iron: dailyLog.reduce((sum, item) => sum + (item.iron || 0) * item.quantity, 0),
+      calcium: dailyLog.reduce((sum, item) => sum + (item.calcium || 0) * item.quantity, 0),
+      vitaminC: dailyLog.reduce((sum, item) => sum + (item.vitaminC || 0) * item.quantity, 0),
+    };
+    setDailyTotals(totals);
+  }
+
+  // Helper function to calculate progress percentage
+  const getProgressPercentage = (consumed, target) => {
+    if (target === 0) return 0;
+    return Math.min((consumed / target) * 100, 100);
+  };
+
+  // Helper function to get progress bar color
+  const getProgressColor = (consumed, target) => {
+    const percentage = getProgressPercentage(consumed, target);
+    if (percentage >= 100) return '#22b573'; // Green for completed
+    if (percentage >= 80) return '#f39c12'; // Orange for close
+    return '#e74c3c'; // Red for low
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -156,11 +233,30 @@ export default function NutrientsScreen() {
         </View>
       </View>
 
-      {/* Daily Calories */}
+      {/* Daily Calories with Progress */}
       <View style={styles.calorieCard}>
-        <Text style={styles.calorieTitle}>Daily Calories</Text>
-        <Text style={styles.calorieAmount}>{recommendations.calories}</Text>
-        <Text style={styles.calorieSubtext}>calories per day</Text>
+        <View style={styles.calorieHeader}>
+          <Text style={styles.calorieTitle}>Daily Calories</Text>
+          <Text style={styles.calorieProgress}>
+            {dailyTotals.calories}/{recommendations.calories}
+          </Text>
+        </View>
+        <View style={styles.progressBarContainer}>
+          <View style={styles.progressBarBackground}>
+            <View 
+              style={[
+                styles.progressBar, 
+                { 
+                  width: `${getProgressPercentage(dailyTotals.calories, recommendations.calories)}%`,
+                  backgroundColor: getProgressColor(dailyTotals.calories, recommendations.calories)
+                }
+              ]} 
+            />
+          </View>
+        </View>
+        <Text style={styles.calorieSubtext}>
+          {getProgressPercentage(dailyTotals.calories, recommendations.calories).toFixed(1)}% of daily target
+        </Text>
       </View>
 
       {/* Tab Navigation */}
@@ -185,28 +281,79 @@ export default function NutrientsScreen() {
           <View style={styles.macroCard}>
             <View style={styles.macroHeader}>
               <Text style={styles.macroName}>Protein</Text>
-              <Text style={styles.macroTarget}>{recommendations.protein}g</Text>
+              <Text style={styles.macroProgress}>
+                {dailyTotals.protein.toFixed(1)}/{recommendations.protein}g
+              </Text>
+            </View>
+            <View style={styles.progressBarContainer}>
+              <View style={styles.progressBarBackground}>
+                <View 
+                  style={[
+                    styles.progressBar, 
+                    { 
+                      width: `${getProgressPercentage(dailyTotals.protein, recommendations.protein)}%`,
+                      backgroundColor: getProgressColor(dailyTotals.protein, recommendations.protein)
+                    }
+                  ]} 
+                />
+              </View>
             </View>
             <Text style={styles.macroDesc}>Essential for muscle repair and growth</Text>
-            <Text style={styles.macroNote}>Based on {recommendations.proteinPerKg}g per kg body weight</Text>
+            <Text style={styles.macroNote}>
+              {getProgressPercentage(dailyTotals.protein, recommendations.protein).toFixed(1)}% of daily target • Based on {recommendations.proteinPerKg}g per kg body weight
+            </Text>
           </View>
 
           <View style={styles.macroCard}>
             <View style={styles.macroHeader}>
               <Text style={styles.macroName}>Carbohydrates</Text>
-              <Text style={styles.macroTarget}>{recommendations.carbs}g</Text>
+              <Text style={styles.macroProgress}>
+                {dailyTotals.carbs.toFixed(1)}/{recommendations.carbs}g
+              </Text>
+            </View>
+            <View style={styles.progressBarContainer}>
+              <View style={styles.progressBarBackground}>
+                <View 
+                  style={[
+                    styles.progressBar, 
+                    { 
+                      width: `${getProgressPercentage(dailyTotals.carbs, recommendations.carbs)}%`,
+                      backgroundColor: getProgressColor(dailyTotals.carbs, recommendations.carbs)
+                    }
+                  ]} 
+                />
+              </View>
             </View>
             <Text style={styles.macroDesc}>Primary energy source for athletes</Text>
-            <Text style={styles.macroNote}>Based on {recommendations.carbsPerKg}g per kg body weight</Text>
+            <Text style={styles.macroNote}>
+              {getProgressPercentage(dailyTotals.carbs, recommendations.carbs).toFixed(1)}% of daily target • Based on {recommendations.carbsPerKg}g per kg body weight
+            </Text>
           </View>
 
           <View style={styles.macroCard}>
             <View style={styles.macroHeader}>
               <Text style={styles.macroName}>Fat</Text>
-              <Text style={styles.macroTarget}>{recommendations.fat}g</Text>
+              <Text style={styles.macroProgress}>
+                {dailyTotals.fat.toFixed(1)}/{recommendations.fat}g
+              </Text>
+            </View>
+            <View style={styles.progressBarContainer}>
+              <View style={styles.progressBarBackground}>
+                <View 
+                  style={[
+                    styles.progressBar, 
+                    { 
+                      width: `${getProgressPercentage(dailyTotals.fat, recommendations.fat)}%`,
+                      backgroundColor: getProgressColor(dailyTotals.fat, recommendations.fat)
+                    }
+                  ]} 
+                />
+              </View>
             </View>
             <Text style={styles.macroDesc}>Supports hormone production and energy</Text>
-            <Text style={styles.macroNote}>Based on {recommendations.fatPerKg}g per kg body weight</Text>
+            <Text style={styles.macroNote}>
+              {getProgressPercentage(dailyTotals.fat, recommendations.fat).toFixed(1)}% of daily target • Based on {recommendations.fatPerKg}g per kg body weight
+            </Text>
           </View>
 
           <View style={styles.macroCard}>
@@ -223,15 +370,83 @@ export default function NutrientsScreen() {
       {/* Micros Tab */}
       {tab === 'Micros' && (
         <View style={styles.tabContent}>
-          {MICROS.map((micro, index) => (
-            <View key={index} style={styles.microCard}>
-              <View style={styles.microHeader}>
-                <Text style={styles.microName}>{micro.name}</Text>
-                <Text style={styles.microTarget}>{micro.range}</Text>
-              </View>
-              <Text style={styles.microDesc}>{micro.desc}</Text>
+          <View style={styles.microCard}>
+            <View style={styles.microHeader}>
+              <Text style={styles.microName}>Iron</Text>
+              <Text style={styles.microProgress}>
+                {dailyTotals.iron.toFixed(1)}/{MICROS[0].target}{MICROS[0].unit}
+              </Text>
             </View>
-          ))}
+            <View style={styles.progressBarContainer}>
+              <View style={styles.progressBarBackground}>
+                <View 
+                  style={[
+                    styles.progressBar, 
+                    { 
+                      width: `${getProgressPercentage(dailyTotals.iron, MICROS[0].target)}%`,
+                      backgroundColor: getProgressColor(dailyTotals.iron, MICROS[0].target)
+                    }
+                  ]} 
+                />
+              </View>
+            </View>
+            <Text style={styles.microDesc}>Supports oxygen transport</Text>
+            <Text style={styles.microNote}>
+              {getProgressPercentage(dailyTotals.iron, MICROS[0].target).toFixed(1)}% of daily target • Recommended: {MICROS[0].range}
+            </Text>
+          </View>
+
+          <View style={styles.microCard}>
+            <View style={styles.microHeader}>
+              <Text style={styles.microName}>Calcium</Text>
+              <Text style={styles.microProgress}>
+                {dailyTotals.calcium.toFixed(0)}/{MICROS[1].target}{MICROS[1].unit}
+              </Text>
+            </View>
+            <View style={styles.progressBarContainer}>
+              <View style={styles.progressBarBackground}>
+                <View 
+                  style={[
+                    styles.progressBar, 
+                    { 
+                      width: `${getProgressPercentage(dailyTotals.calcium, MICROS[1].target)}%`,
+                      backgroundColor: getProgressColor(dailyTotals.calcium, MICROS[1].target)
+                    }
+                  ]} 
+                />
+              </View>
+            </View>
+            <Text style={styles.microDesc}>Essential for bone health</Text>
+            <Text style={styles.microNote}>
+              {getProgressPercentage(dailyTotals.calcium, MICROS[1].target).toFixed(1)}% of daily target • Recommended: {MICROS[1].range}
+            </Text>
+          </View>
+
+          <View style={styles.microCard}>
+            <View style={styles.microHeader}>
+              <Text style={styles.microName}>Vitamin C</Text>
+              <Text style={styles.microProgress}>
+                {dailyTotals.vitaminC.toFixed(1)}/{MICROS[2].target}{MICROS[2].unit}
+              </Text>
+            </View>
+            <View style={styles.progressBarContainer}>
+              <View style={styles.progressBarBackground}>
+                <View 
+                  style={[
+                    styles.progressBar, 
+                    { 
+                      width: `${getProgressPercentage(dailyTotals.vitaminC, MICROS[2].target)}%`,
+                      backgroundColor: getProgressColor(dailyTotals.vitaminC, MICROS[2].target)
+                    }
+                  ]} 
+                />
+              </View>
+            </View>
+            <Text style={styles.microDesc}>Boosts immune system</Text>
+            <Text style={styles.microNote}>
+              {getProgressPercentage(dailyTotals.vitaminC, MICROS[2].target).toFixed(1)}% of daily target • Recommended: {MICROS[2].range}
+            </Text>
+          </View>
         </View>
       )}
 
@@ -259,9 +474,10 @@ const styles = StyleSheet.create({
   summaryLabel: { fontSize: 15, color: '#555' },
   summaryValue: { fontSize: 15, fontWeight: 'bold', color: '#22b573' },
   calorieCard: { backgroundColor: '#e9f9f2', borderRadius: 16, marginHorizontal: 16, marginBottom: 16, padding: 16, alignItems: 'flex-start' },
-  calorieTitle: { fontSize: 18, fontWeight: 'bold', color: '#205081', marginBottom: 2 },
-  calorieAmount: { fontSize: 20, fontWeight: 'bold', color: '#22b573', marginBottom: 4 },
-  calorieSubtext: { fontSize: 14, color: '#555' },
+  calorieHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, width: '100%' },
+  calorieTitle: { fontSize: 18, fontWeight: 'bold', color: '#205081' },
+  calorieProgress: { fontSize: 18, fontWeight: 'bold', color: '#22b573' },
+  calorieSubtext: { fontSize: 14, color: '#555', marginTop: 8 },
   tabContainer: { flexDirection: 'row', justifyContent: 'center', marginBottom: 16 },
   tab: { flex: 1, backgroundColor: '#e0e0e0', borderRadius: 12, marginHorizontal: 16, paddingVertical: 12, alignItems: 'center' },
   activeTab: { backgroundColor: '#4A90E2' },
@@ -269,16 +485,31 @@ const styles = StyleSheet.create({
   activeTabText: { color: '#fff' },
   tabContent: { padding: 16 },
   macroCard: { backgroundColor: '#fff', borderRadius: 16, marginBottom: 16, padding: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
-  macroHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  macroHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   macroName: { fontSize: 18, fontWeight: 'bold', color: '#222' },
+  macroProgress: { fontSize: 18, fontWeight: 'bold', color: '#22b573' },
   macroTarget: { fontSize: 18, fontWeight: 'bold', color: '#22b573' },
   macroDesc: { fontSize: 13, color: '#888', marginTop: 4 },
   macroNote: { fontSize: 13, color: '#444', marginTop: 8 },
   microCard: { backgroundColor: '#fff', borderRadius: 16, marginBottom: 16, padding: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
-  microHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  microHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   microName: { fontSize: 18, fontWeight: 'bold', color: '#222' },
+  microProgress: { fontSize: 18, fontWeight: 'bold', color: '#22b573' },
   microTarget: { fontSize: 18, fontWeight: 'bold', color: '#22b573' },
   microDesc: { fontSize: 13, color: '#888', marginTop: 4 },
+  microNote: { fontSize: 13, color: '#444', marginTop: 8 },
+  progressBarContainer: { marginBottom: 8 },
+  progressBarBackground: { 
+    height: 8, 
+    backgroundColor: '#f0f0f0', 
+    borderRadius: 4,
+    overflow: 'hidden'
+  },
+  progressBar: { 
+    height: '100%', 
+    borderRadius: 4,
+    minWidth: 4
+  },
   notesCard: { backgroundColor: '#e9f9f2', borderRadius: 16, marginHorizontal: 16, marginBottom: 16, padding: 16, alignItems: 'flex-start' },
   notesTitle: { fontSize: 18, fontWeight: 'bold', color: '#205081', marginBottom: 2 },
   noteText: { fontSize: 15, color: '#555', marginBottom: 2 },

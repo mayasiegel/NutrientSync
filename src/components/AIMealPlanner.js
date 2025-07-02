@@ -12,7 +12,7 @@ import {
   Alert
 } from 'react-native';
 import { supabase } from '../lib/supabase';
-import aiMealService from '../services/aiMealService';
+// import aiMealService from '../services/aiMealService'; // Removed
 
 // Mock inventory data (replace with real data later)
 const MOCK_INVENTORY = [
@@ -53,6 +53,38 @@ const QUICK_MEALS = [
   }
 ];
 
+// Helper function to call the OpenAI-powered Supabase Edge Function
+async function generateAIResponse(userInput, userProfile, inventory) {
+  console.log('Calling generate-meal function...');
+  console.log('URL:', 'https://bbpvflablmgilhewtoos.functions.supabase.co/generate-meal');
+  console.log('Payload:', { userInput, userProfile, inventory });
+
+  const response = await fetch('https://bbpvflablmgilhewtoos.functions.supabase.co/generate-meal', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userInput, userProfile, inventory })
+  });
+
+  console.log('Fetch response:', response);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.log('AI service error response:', errorText);
+    throw new Error('AI service error');
+  }
+
+  // OpenAI may return a JSON string, so parse it
+  const text = await response.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    data = { text };
+  }
+  console.log('AI response data:', data);
+  return data;
+}
+
 export default function AIMealPlanner({ navigation }) {
   const [messages, setMessages] = useState([
     {
@@ -68,10 +100,6 @@ export default function AIMealPlanner({ navigation }) {
   const [userProfile, setUserProfile] = useState(null);
   const [inventory, setInventory] = useState(MOCK_INVENTORY);
   const [loading, setLoading] = useState(true);
-  const [conversationState, setConversationState] = useState({
-    excludedIngredients: [],
-    lastMeal: null,
-  });
   const scrollViewRef = useRef();
 
   useEffect(() => {
@@ -114,7 +142,7 @@ export default function AIMealPlanner({ navigation }) {
       //   .from('inventory')
       //   .select('*')
       //   .eq('user_id', session.user.id);
-      
+      // 
       // if (!inventoryError && inventoryData) {
       //   setInventory(inventoryData);
       // }
@@ -140,56 +168,35 @@ export default function AIMealPlanner({ navigation }) {
     setInputText('');
     setIsTyping(true);
 
-    // --- FEEDBACK HANDLING ---
-    let updatedConversationState = { ...conversationState };
-    // Simple feedback parser for exclusions
-    const lowerInput = inputText.toLowerCase();
-    const excludePatterns = [
-      /don[''`]?t want ([a-zA-Z ]+)/i,
-      /no ([a-zA-Z ]+)/i,
-      /remove ([a-zA-Z ]+)/i,
-      /without ([a-zA-Z ]+)/i,
-      /exclude ([a-zA-Z ]+)/i,
-      /allergic to ([a-zA-Z ]+)/i
-    ];
-    for (const pattern of excludePatterns) {
-      const match = lowerInput.match(pattern);
-      if (match && match[1]) {
-        const ingredient = match[1].trim().replace(/\s+$/, '');
-        if (ingredient && !updatedConversationState.excludedIngredients.includes(ingredient)) {
-          updatedConversationState.excludedIngredients = [
-            ...updatedConversationState.excludedIngredients,
-            ingredient.charAt(0).toUpperCase() + ingredient.slice(1)
-          ];
-        }
-      }
-    }
-    // --- END FEEDBACK HANDLING ---
-
     try {
-      // Use the AI service to generate response
-      const aiResponse = await aiMealService.generateMealSuggestion(
+      // Call your OpenAI Edge Function
+      const aiResponse = await generateAIResponse(
         inputText,
         userProfile,
-        inventory,
-        updatedConversationState
+        inventory
       );
-      setMessages(prev => [...prev, aiResponse]);
-      // Update last meal and conversation state
-      setConversationState(prev => ({
-        ...updatedConversationState,
-        lastMeal: aiResponse.meal || prev.lastMeal
-      }));
+
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          type: 'ai',
+          text: aiResponse.text || "Here's a meal suggestion!",
+          timestamp: new Date(),
+          meal: aiResponse.meal || null
+        }
+      ]);
     } catch (error) {
       console.error('AI Service Error:', error);
-      // Fallback to simple response
-      const fallbackResponse = {
-        id: Date.now() + 1,
-        type: 'ai',
-        text: "I'm having trouble generating a meal right now. Try asking for something specific like 'breakfast' or 'high protein meal'.",
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, fallbackResponse]);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + 2,
+          type: 'ai',
+          text: "I'm having trouble generating a meal right now. Try again later.",
+          timestamp: new Date()
+        }
+      ]);
     } finally {
       setIsTyping(false);
     }
