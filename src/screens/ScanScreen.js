@@ -22,7 +22,7 @@ export default function ScanScreen({ navigation }) {
           <Text style={styles.title}>Scan Food</Text>
         </View>
         <View style={styles.permissionContainer}>
-          <Text style={styles.message}>We need your permission to show the camera</Text>
+        <Text style={styles.message}>We need your permission to show the camera</Text>
           <Button onPress={requestPermission} title="Grant Permission" />
         </View>
       </View>

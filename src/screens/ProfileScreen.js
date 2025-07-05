@@ -84,10 +84,15 @@ export default function ProfileScreen({ route }) {
           <Text style={styles.email}>{session.user.email}</Text>
         </View>
       </View>
-      <View style={styles.iconRow}>
-        <View style={styles.iconCol}><Text style={{ fontSize: 28 }}>🎯</Text><Text style={styles.iconLabel}>Goals</Text></View>
-        <View style={styles.iconCol}><Text style={{ fontSize: 28 }}>📊</Text><Text style={styles.iconLabel}>Progress</Text></View>
-        <View style={styles.iconCol}><Text style={{ fontSize: 28 }}>⚙️</Text><Text style={styles.iconLabel}>Settings</Text></View>
+      <View style={styles.streakCard}>
+        <Text style={styles.streakFire}>🔥</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.streakCardText}>
+            {profile.current_streak > 0
+              ? `${profile.current_streak}-day streak! (Longest: ${profile.longest_streak})`
+              : 'No streak yet'}
+          </Text>
+        </View>
       </View>
       <View style={styles.card}>
         <View style={styles.cardHeader}>
@@ -215,7 +220,7 @@ export default function ProfileScreen({ route }) {
             <View style={styles.infoRow}><Text style={styles.infoLabel}>Name</Text><Text style={styles.infoValue}>{profile.username || 'N/A'}</Text></View>
             <View style={styles.infoRow}><Text style={styles.infoLabel}>Age</Text><Text style={styles.infoValue}>{profile.age || 'N/A'}</Text></View>
             <View style={styles.infoRow}><Text style={styles.infoLabel}>Location</Text><Text style={styles.infoValue}>{profile.location || 'N/A'}</Text></View>
-            <View style={styles.infoRow}><Text style={styles.infoLabel}>Member Since</Text><Text style={styles.infoValue}>Jan 2023</Text></View>
+        <View style={styles.infoRow}><Text style={styles.infoLabel}>Member Since</Text><Text style={styles.infoValue}>Jan 2023</Text></View>
           </>
         )}
       </View>
@@ -381,9 +386,23 @@ const styles = StyleSheet.create({
   avatar: { width: 64, height: 64, borderRadius: 32, marginRight: 16, backgroundColor: '#eee' },
   name: { fontSize: 28, fontWeight: 'bold', color: '#222' },
   email: { fontSize: 16, color: '#555', marginTop: 2 },
-  iconRow: { flexDirection: 'row', justifyContent: 'space-around', marginHorizontal: 16, marginBottom: 16, backgroundColor: '#fff', borderRadius: 16, paddingVertical: 12 },
-  iconCol: { alignItems: 'center', flex: 1 },
-  iconLabel: { fontSize: 15, color: '#555', marginTop: 4 },
+  streakCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    marginHorizontal: 20,
+    marginTop: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  streakFire: { fontSize: 36, marginRight: 16 },
+  streakCardText: { fontSize: 18, fontWeight: 'bold', color: '#e67e22' },
   card: { backgroundColor: '#fff', borderRadius: 16, marginHorizontal: 16, marginBottom: 16, padding: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   cardTitle: { fontSize: 20, fontWeight: 'bold', color: '#222' },

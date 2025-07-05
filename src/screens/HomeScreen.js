@@ -117,9 +117,11 @@ export default function HomeScreen({ navigation }) {
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expirationAlerts, setExpirationAlerts] = useState([]);
+  const [profile, setProfile] = useState(null);
 
   useEffect(() => {
     fetchInventoryAndCalculateAlerts();
+    fetchProfile();
   }, []);
 
   async function fetchInventoryAndCalculateAlerts() {
@@ -152,6 +154,21 @@ export default function HomeScreen({ navigation }) {
       console.error('Error fetching inventory:', error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchProfile() {
+    try {
+      const { data: { user }, error: profileError } = await supabase.auth.getUser();
+      if (profileError || !user) {
+        console.log('No user profile found');
+        setProfile(null);
+        return;
+      }
+
+      setProfile(user);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
     }
   }
 
@@ -250,7 +267,7 @@ export default function HomeScreen({ navigation }) {
             <View key={alert.id} style={[styles.alertCard, getAlertStyle(alert.urgency)]}>
               <Text style={styles.alertText}>{alert.text}</Text>
               <Text style={styles.alertCategory}>{alert.category}</Text>
-            </View>
+        </View>
           ))}
           {expirationAlerts.length > 3 && (
             <Text style={styles.moreAlerts}>+{expirationAlerts.length - 3} more items expiring soon</Text>
@@ -269,11 +286,11 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.aiMealTextContainer}>
               <Text style={styles.aiMealTitle}>AI Meal Planner</Text>
               <Text style={styles.aiMealSubtitle}>Get personalized meal suggestions from your inventory</Text>
-            </View>
+        </View>
             <Text style={styles.aiMealArrow}>→</Text>
           </View>
         </TouchableOpacity>
-      </View>
+          </View>
 
       {/* Today's Performance */}
       <Text style={styles.sectionTitle}>Today's Performance</Text>
@@ -304,6 +321,24 @@ export default function HomeScreen({ navigation }) {
           <View style={[styles.progressBar, { width: '75%', backgroundColor: '#f7b731' }]} />
         </View>
         <Text style={styles.progressSubLabel}>Target: 2000 kcal</Text>
+      </View>
+
+      {/* Streak Display */}
+      <View style={styles.streakContainer}>
+        <Text style={styles.streakFlame}>🔥</Text>
+        <Text style={styles.streakText}>
+          {profile?.current_streak > 0
+            ? `You're on a ${profile.current_streak}-day streak!`
+            : "Start logging food to begin your streak!"}
+        </Text>
+        {profile?.current_streak > 0 && (
+          <Text style={styles.streakSubtext}>
+            Longest streak: {profile.longest_streak} days
+          </Text>
+        )}
+        {/* Optional: Milestone message */}
+        {profile?.current_streak === 10 && <Text style={styles.streakMilestone}>🎉 10-day milestone! Keep it up!</Text>}
+        {profile?.current_streak === 25 && <Text style={styles.streakMilestone}>🏅 25-day milestone! Amazing!</Text>}
       </View>
 
       {/* Weekly Protein Intake Graph */}
@@ -342,7 +377,7 @@ export default function HomeScreen({ navigation }) {
           withOuterLines={false}
           withShadow={false}
         />
-      </View>
+        </View>
 
       {/* Achievements */}
       <Text style={styles.sectionTitle}>Achievements</Text>
@@ -350,7 +385,7 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.achievementIcon}><Image source={require('../../assets/icon.png')} style={styles.achievementImg} /></View>
         <View style={styles.achievementIcon}><Image source={require('../../assets/icon.png')} style={styles.achievementImg} /></View>
         <View style={styles.achievementIcon}><Image source={require('../../assets/icon.png')} style={styles.achievementImg} /></View>
-      </View>
+        </View>
 
       {/* Performance Tips */}
       <Text style={styles.sectionTitle}>Performance Tips</Text>
@@ -359,8 +394,8 @@ export default function HomeScreen({ navigation }) {
         <View style={{ flex: 1 }}>
           <Text style={styles.tipTitle}>Fuel Your Training</Text>
           <Text style={styles.tipText}>Optimize your nutrition for peak performance. Focus on protein-rich foods and stay hydrated.</Text>
+          </View>
         </View>
-      </View>
     </ScrollView>
   );
 }
@@ -407,8 +442,8 @@ const styles = StyleSheet.create({
   alertsSection: { marginHorizontal: 20, marginBottom: 16 },
   alertsTitle: { fontSize: 18, fontWeight: 'bold', color: '#d32f2f', marginBottom: 8 },
   alertCard: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     padding: 12, 
     borderRadius: 8, 
@@ -421,7 +456,7 @@ const styles = StyleSheet.create({
   aiMealSection: { marginHorizontal: 20, marginBottom: 16 },
   aiMealButton: { 
     backgroundColor: '#007AFF', 
-    borderRadius: 16, 
+    borderRadius: 16,
     padding: 16,
     shadowColor: '#000',
     shadowOpacity: 0.1,
@@ -454,4 +489,9 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
+  streakContainer: { alignItems: 'center', marginVertical: 16 },
+  streakFlame: { fontSize: 40, marginBottom: 4 },
+  streakText: { fontSize: 18, fontWeight: 'bold', color: '#e67e22' },
+  streakSubtext: { fontSize: 14, color: '#888' },
+  streakMilestone: { fontSize: 16, color: '#22b573', fontWeight: 'bold', marginTop: 6 },
 }); 

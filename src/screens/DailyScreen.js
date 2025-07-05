@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Pressable, Dimensions, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
+import { updateUserStreak } from '../services/streakService';
 
 // This will be replaced with real inventory data from Supabase
 
@@ -235,6 +236,8 @@ export default function DailyScreen() {
       setFoodInput('');
       setSelectedFoodId('');
       setQuantity('');
+
+      await updateUserStreak(session.user.id);
 
     } catch (error) {
       console.error('Error adding food:', error);

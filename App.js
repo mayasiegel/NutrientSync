@@ -24,17 +24,17 @@ const Stack = createNativeStackNavigator();
 // Main app tabs component (your existing navigation)
 function MainApp({ session }) {
   return (
-    <Tab.Navigator initialRouteName="Home">
-      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Navigator initialRouteName="Home">
+        <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Inventory" component={InventoryScreen} initialParams={{ session }} />
-      <Tab.Screen name="Daily" component={DailyScreen} />
-      <Tab.Screen name="Nutrients" component={NutrientsScreen} />
-      <Tab.Screen 
-        name="Profile" 
-        component={ProfileScreen}
-        initialParams={{ session }}
-      />
-    </Tab.Navigator>
+        <Tab.Screen name="Daily" component={DailyScreen} />
+        <Tab.Screen name="Nutrients" component={NutrientsScreen} />
+        <Tab.Screen 
+          name="Profile" 
+          component={ProfileScreen}
+          initialParams={{ session }}
+        />
+      </Tab.Navigator>
   );
 }
 
