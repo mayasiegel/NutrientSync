@@ -116,55 +116,41 @@ export default function NutrientsScreen() {
     };
   }
 
-  function calculateDailyTotals() {
-    // This would normally come from the daily log
-    // For now, using mock data that matches the daily screen
-    const dailyLog = [
-      {
-        name: 'Oatmeal',
-        quantity: 1,
-        calories: 150,
-        protein: 5,
-        carbs: 27,
-        fat: 3,
-        iron: 2.5,
-        calcium: 50,
-        vitaminC: 0,
-      },
-      {
-        name: 'Apple',
-        quantity: 1,
-        calories: 95,
-        protein: 0.5,
-        carbs: 25,
-        fat: 0.3,
-        iron: 0.2,
-        calcium: 6,
-        vitaminC: 8.4,
-      },
-      {
-        name: 'Chicken Salad',
-        quantity: 1,
-        calories: 350,
-        protein: 25,
-        carbs: 8,
-        fat: 22,
-        iron: 1.2,
-        calcium: 30,
-        vitaminC: 2,
-      },
-    ];
+  async function calculateDailyTotals() {
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.user) {
+        console.log('No user session found');
+        return;
+      }
 
-    const totals = {
-      calories: dailyLog.reduce((sum, item) => sum + item.calories * item.quantity, 0),
-      protein: dailyLog.reduce((sum, item) => sum + (item.protein || 0) * item.quantity, 0),
-      carbs: dailyLog.reduce((sum, item) => sum + (item.carbs || 0) * item.quantity, 0),
-      fat: dailyLog.reduce((sum, item) => sum + (item.fat || 0) * item.quantity, 0),
-      iron: dailyLog.reduce((sum, item) => sum + (item.iron || 0) * item.quantity, 0),
-      calcium: dailyLog.reduce((sum, item) => sum + (item.calcium || 0) * item.quantity, 0),
-      vitaminC: dailyLog.reduce((sum, item) => sum + (item.vitaminC || 0) * item.quantity, 0),
-    };
-    setDailyTotals(totals);
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      
+      const { data, error } = await supabase
+        .from('daily_log')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('log_date', today);
+
+      if (error) {
+        console.error('Error fetching daily log for totals:', error);
+        return;
+      }
+
+      const dailyLog = data || [];
+      const totals = {
+        calories: dailyLog.reduce((sum, item) => sum + (item.calories || 0) * item.quantity, 0),
+        protein: dailyLog.reduce((sum, item) => sum + (item.protein || 0) * item.quantity, 0),
+        carbs: dailyLog.reduce((sum, item) => sum + (item.carbs || 0) * item.quantity, 0),
+        fat: dailyLog.reduce((sum, item) => sum + (item.fat || 0) * item.quantity, 0),
+        iron: dailyLog.reduce((sum, item) => sum + (item.iron || 0) * item.quantity, 0),
+        calcium: dailyLog.reduce((sum, item) => sum + (item.calcium || 0) * item.quantity, 0),
+        vitaminC: dailyLog.reduce((sum, item) => sum + (item.vitamin_c || 0) * item.quantity, 0),
+      };
+      setDailyTotals(totals);
+    } catch (error) {
+      console.error('Error calculating daily totals:', error);
+    }
   }
 
   // Helper function to calculate progress percentage

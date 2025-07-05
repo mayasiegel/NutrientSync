@@ -1,7 +1,9 @@
-import React, { useState, useRef } from 'react';
+// All inventory is now real, no mock data.
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, Pressable, FlatList, Alert, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FoodSearch from '../components/FoodSearch';
+import { supabase } from '../lib/supabase'; // Adjust the path if needed
 
 const CATEGORIES = ['Fruits', 'Vegetables', 'Dairy', 'Meat', 'Other'];
 const CATEGORY_ICONS = {
@@ -13,52 +15,9 @@ const CATEGORY_ICONS = {
   Other: '🍽️',
 };
 
-const initialFoods = [
-  {
-    id: '1',
-    name: 'Apples',
-    category: 'Fruits',
-    quantity: 5,
-    expiration: '2023-12-15',
-    calories: 95,
-  },
-  {
-    id: '2',
-    name: 'Milk',
-    category: 'Dairy',
-    quantity: 1,
-    expiration: '2023-12-10',
-    calories: 150,
-  },
-  {
-    id: '3',
-    name: 'Chicken Breast',
-    category: 'Meat',
-    quantity: 3,
-    expiration: '2023-12-12',
-    calories: 200,
-  },
-];
-
-function formatDate(dateStr) {
-  // Accepts YYYY-MM-DD, returns MM/DD/YYYY
-  if (!dateStr) return '';
-  const [year, month, day] = dateStr.split('-');
-  if (!year || !month || !day) return dateStr;
-  return `${month}/${day}/${year}`;
-}
-
 const filters = ['All', 'High Protein', 'Complex Carbs', 'Electrolytes'];
-const mockInventory = [
-  { name: 'Chicken Breast', expires: 'in 3 days', image: require('../../assets/icon.png'), category: 'High Protein' },
-  { name: 'Sweet Potatoes', expires: 'in 7 days', image: require('../../assets/icon.png'), category: 'Complex Carbs' },
-  { name: 'Avocados', expires: 'in 10 days', image: require('../../assets/icon.png'), category: 'Electrolytes' },
-  { name: 'Salmon', expires: 'in 5 days', image: require('../../assets/icon.png'), category: 'High Protein' },
-  { name: 'Quinoa', expires: 'in 12 days', image: require('../../assets/icon.png'), category: 'Complex Carbs' },
-];
 
 export default function InventoryScreen({ navigation }) {
-  const [foods, setFoods] = useState(initialFoods);
   const [modalVisible, setModalVisible] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({
@@ -77,6 +36,7 @@ export default function InventoryScreen({ navigation }) {
   const [expInput, setExpInput] = useState('');
   const expInputRef = useRef();
   const [selectedFilter, setSelectedFilter] = useState('All');
+  const [inventory, setInventory] = useState([]);
 
   const openAddModal = () => {
     setEditId(null);
@@ -96,74 +56,112 @@ export default function InventoryScreen({ navigation }) {
     setModalVisible(true);
   };
 
-  const handleSave = () => {
-    if (!form.name || !form.category || !form.quantity || !form.expiration || !form.calories) return;
-    if (editId) {
-      setFoods(foods.map(f => f.id === editId ? { ...f, ...form, quantity: Number(form.quantity), calories: Number(form.calories) } : f));
-    } else {
-      setFoods([
-        ...foods,
-        {
-          ...form,
-          id: Date.now().toString(),
-          quantity: Number(form.quantity),
-          calories: Number(form.calories),
-        },
-      ]);
+  // Fetch inventory from Supabase
+  async function fetchInventory() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('inventory')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name');
+      if (!error) setInventory(data || []);
+      else console.error('Fetch inventory error:', error);
+    } catch (e) {
+      console.error('Fetch inventory exception:', e);
     }
-    setModalVisible(false);
-  };
+  }
 
-  // Add handler for FoodSearch
-  const handleAddFoodFromSearch = (item) => {
-    if (foods.some(f => f.fdcId === item.fdcId)) {
-      setConfirmation('Food already in inventory!');
-      setTimeout(() => setConfirmation(''), 2000);
+  useEffect(() => {
+    fetchInventory();
+  }, []);
+
+  // Add or edit food in Supabase
+  const handleSave = async () => {
+    if (!form.name || !form.category || !form.quantity || !form.expiration || !form.calories) {
+      Alert.alert('Missing fields', 'Please fill out all fields.');
       return;
     }
-    setPendingUsdaFood(item);
-    setShowExpModal(true);
-    setExpInput('');
-    setTimeout(() => expInputRef.current && expInputRef.current.focus(), 300);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      Alert.alert('Error', 'You must be logged in to save items.');
+      return;
+    }
+    const foodData = {
+      user_id: user.id,
+      name: form.name,
+      category: form.category,
+      quantity: Number(form.quantity),
+      expiration_date: form.expiration,
+      calories: Number(form.calories),
+    };
+    try {
+      if (editId) {
+        const { error } = await supabase
+          .from('inventory')
+          .update(foodData)
+          .eq('id', editId);
+        if (error) {
+          console.error(error);
+          Alert.alert('Error', 'Failed to update item.');
+          return;
+        }
+      } else {
+        const { data, error } = await supabase
+          .from('inventory')
+          .insert([foodData])
+          .select();
+        if (error) {
+          console.error(error);
+          Alert.alert('Error', 'Failed to save item.');
+          return;
+        }
+        // Optionally, you can use data[0] if you want to optimistically update UI
+      }
+      setModalVisible(false);
+      fetchInventory();
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Unexpected error occurred.');
+    }
   };
 
   // Confirm add USDA food (with or without expiration)
-  const confirmAddUsdaFood = (expiration) => {
+  const confirmAddUsdaFood = async (expiration) => {
     const item = pendingUsdaFood;
     const nutrients = item.foodNutrients || [];
-    setFoods([
-      ...foods,
-      {
-        id: Date.now().toString(),
-        fdcId: item.fdcId,
-        name: item.description,
-        category: 'Other',
-        quantity: 1,
-        expiration: expiration || '',
-        calories: nutrients.find(n => n.nutrientName === 'Energy')?.value || '',
-        protein: nutrients.find(n => n.nutrientName === 'Protein')?.value || '',
-        carbs: nutrients.find(n => n.nutrientName === 'Carbohydrate, by difference')?.value || '',
-        fat: nutrients.find(n => n.nutrientName === 'Total lipid (fat)')?.value || '',
-        fiber: nutrients.find(n => n.nutrientName === 'Fiber, total dietary')?.value || '',
-      },
-    ]);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      Alert.alert('Error', 'You must be logged in.');
+      return;
+    }
+    const foodData = {
+      user_id: user.id,
+      name: item.description,
+      category: 'Other',
+      quantity: 1,
+      expiration_date: expiration || '',
+      calories: nutrients.find(n => n.nutrientName === 'Energy')?.value || 0,
+    };
+    const { data, error } = await supabase.from('inventory').insert([foodData]).select();
+    if (error) {
+      console.error(error);
+      Alert.alert('Error', 'Failed to save USDA food.');
+      return;
+    }
     setShowExpModal(false);
     setPendingUsdaFood(null);
     setConfirmation('Food added to inventory!');
     setTimeout(() => setConfirmation(''), 2000);
+    fetchInventory();
   };
 
   // Filtered foods for inventory
-  const filteredFoods = foods.filter(f =>
-    (categoryFilter === 'All' || f.category === categoryFilter) &&
+  const filteredFoods = inventory.filter(f =>
+    (selectedFilter === 'All' || f.category === selectedFilter) &&
     (f.name.toLowerCase().includes(search.toLowerCase()) || f.category.toLowerCase().includes(search.toLowerCase()))
   );
-
-  const filteredInventory = mockInventory.filter(item => {
-    const matchesFilter = selectedFilter === 'All' || item.category === selectedFilter;
-    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
 
   // Render each inventory item
   const renderInventoryItem = ({ item }) => (
@@ -246,18 +244,10 @@ export default function InventoryScreen({ navigation }) {
 
       {/* Inventory List */}
       <FlatList
-        data={filteredInventory}
-        keyExtractor={item => item.name}
+        data={filteredFoods}
+        keyExtractor={item => item.id?.toString() || item.name}
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 32 }}
-        renderItem={({ item }) => (
-          <View style={styles.foodCard}>
-            <Image source={item.image} style={styles.foodImg} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.foodName}>{item.name}</Text>
-              <Text style={styles.foodExpiry}>Expires {item.expires}</Text>
-            </View>
-          </View>
-        )}
+        renderItem={renderInventoryItem}
         ListEmptyComponent={<Text style={styles.emptyText}>No items found.</Text>}
       />
 
