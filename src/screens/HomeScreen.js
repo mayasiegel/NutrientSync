@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { supabase } from '../lib/supabase';
+import { useNavigation } from '@react-navigation/native';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -113,11 +114,12 @@ const caloriesData = {
   ],
 };
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen(props) {
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expirationAlerts, setExpirationAlerts] = useState([]);
   const [profile, setProfile] = useState(null);
+  const navigation = useNavigation();
 
   useEffect(() => {
     fetchInventoryAndCalculateAlerts();
@@ -275,6 +277,18 @@ export default function HomeScreen({ navigation }) {
         </View>
       ) : null}
 
+      {/* Inventory-Based Meal Planner Button */}
+      <View style={styles.mealPlannerCardBtnGreen}>
+        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }} onPress={() => navigation.navigate('MealPlanner')}>
+          <Text style={styles.mealPlannerEmoji}>🥗</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.mealPlannerCardTitle}>Inventory Meal Planner</Text>
+            <Text style={styles.mealPlannerCardDesc}>See meal ideas you can make with what you have.</Text>
+          </View>
+          <Text style={styles.mealPlannerArrow}>→</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* AI Meal Planner Button */}
       <View style={styles.aiMealSection}>
         <TouchableOpacity 
@@ -285,7 +299,7 @@ export default function HomeScreen({ navigation }) {
             <Text style={styles.aiMealIcon}>🤖</Text>
             <View style={styles.aiMealTextContainer}>
               <Text style={styles.aiMealTitle}>AI Meal Planner</Text>
-              <Text style={styles.aiMealSubtitle}>Get personalized meal suggestions from your inventory</Text>
+              <Text style={styles.aiMealSubtitle}>Let our AI chatbot suggest creative meals based on your goals.</Text>
         </View>
             <Text style={styles.aiMealArrow}>→</Text>
           </View>
@@ -494,4 +508,43 @@ const styles = StyleSheet.create({
   streakText: { fontSize: 18, fontWeight: 'bold', color: '#e67e22' },
   streakSubtext: { fontSize: 14, color: '#888' },
   streakMilestone: { fontSize: 16, color: '#22b573', fontWeight: 'bold', marginTop: 6 },
+  mealPlannerCardBtnGreen: {
+    backgroundColor: '#22b573',
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    marginHorizontal: 20,
+    marginTop: 24,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  mealPlannerEmoji: { fontSize: 32, marginRight: 16 },
+  mealPlannerCardTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
+  mealPlannerCardDesc: { fontSize: 14, color: '#eafff2', marginTop: 2 },
+  mealPlannerArrow: { fontSize: 28, color: '#fff', marginLeft: 12 },
+  mealPlannerCardBtn: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    marginHorizontal: 20,
+    marginTop: 24,
+    marginBottom: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  mealPlannerCardBtnText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#205081',
+    letterSpacing: 0.5,
+  },
 }); 

@@ -17,6 +17,13 @@ const CATEGORY_ICONS = {
 
 const filters = ['All', 'High Protein', 'Complex Carbs', 'Electrolytes'];
 
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const [year, month, day] = dateStr.split('-');
+  if (!year || !month || !day) return dateStr;
+  return `${month}/${day}/${year}`;
+}
+
 export default function InventoryScreen({ navigation }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -143,11 +150,14 @@ export default function InventoryScreen({ navigation }) {
       quantity: 1,
       expiration_date: expiration || '',
       calories: nutrients.find(n => n.nutrientName === 'Energy')?.value || 0,
+      protein: nutrients.find(n => n.nutrientName === 'Protein')?.value || 0,
+      carbs: nutrients.find(n => n.nutrientName === 'Carbohydrate, by difference')?.value || 0,
+      fat: nutrients.find(n => n.nutrientName === 'Total lipid (fat)')?.value || 0,
     };
-    const { data, error } = await supabase.from('inventory').insert([foodData]).select();
+    const { error } = await supabase.from('inventory').insert([foodData]);
     if (error) {
-      console.error(error);
-      Alert.alert('Error', 'Failed to save USDA food.');
+      Alert.alert('Insert Error', error.message);
+      console.error('Supabase insert error:', error);
       return;
     }
     setShowExpModal(false);

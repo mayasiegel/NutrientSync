@@ -17,6 +17,7 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import ScanScreen from './src/screens/ScanScreen';
 import AddFoodScreen from './src/screens/AddFoodScreen';
 import AIMealPlanner from './src/components/AIMealPlanner';
+import MealPlannerScreen from './src/screens/MealPlannerScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -26,7 +27,7 @@ function MainApp({ session }) {
   return (
       <Tab.Navigator initialRouteName="Home">
         <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Inventory" component={InventoryScreen} initialParams={{ session }} />
+        <Tab.Screen name="Inventory" component={InventoryScreen} initialParams={{ session }} />
         <Tab.Screen name="Daily" component={DailyScreen} />
         <Tab.Screen name="Nutrients" component={NutrientsScreen} />
         <Tab.Screen 
@@ -135,6 +136,7 @@ export default function App() {
         <Stack.Screen name="AddFood" component={AddFoodScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Scan" component={ScanScreen} options={{ headerShown: false }} />
         <Stack.Screen name="AIMealPlanner" component={AIMealPlanner} options={{ headerShown: false }} />
+        <Stack.Screen name="MealPlanner" component={MealPlannerScreen} options={{ headerShown: true, title: 'Meal Planner' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
