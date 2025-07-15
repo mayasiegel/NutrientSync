@@ -3,6 +3,9 @@ import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Image
 import { LineChart } from 'react-native-chart-kit';
 import { supabase } from '../lib/supabase';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import scheduleService from '../services/scheduleService';
+import mealRecommendationService from '../services/mealRecommendationService';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -119,11 +122,16 @@ export default function HomeScreen(props) {
   const [loading, setLoading] = useState(true);
   const [expirationAlerts, setExpirationAlerts] = useState([]);
   const [profile, setProfile] = useState(null);
+  const [scheduleEvents, setScheduleEvents] = useState([]);
+  const [hasSchedule, setHasSchedule] = useState(false);
+  const [upcomingEvent, setUpcomingEvent] = useState(null);
+  const [recentLog, setRecentLog] = useState(null);
   const navigation = useNavigation();
 
   useEffect(() => {
     fetchInventoryAndCalculateAlerts();
     fetchProfile();
+    fetchScheduleData();
   }, []);
 
   async function fetchInventoryAndCalculateAlerts() {
@@ -171,6 +179,56 @@ export default function HomeScreen(props) {
       setProfile(user);
     } catch (error) {
       console.error('Error fetching profile:', error);
+    }
+  }
+
+  async function fetchScheduleData() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // For now, use mock data
+      const mockEvents = scheduleService.getMockEvents();
+      setScheduleEvents(mockEvents);
+      setHasSchedule(mockEvents.length > 0);
+
+      // Find upcoming event (next 24 hours)
+      const now = new Date();
+      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      
+      const upcoming = mockEvents.find(event => {
+        const eventTime = new Date(event.start_time);
+        return eventTime > now && eventTime < tomorrow;
+      });
+      
+      setUpcomingEvent(upcoming);
+
+      // Get meal recommendations from recent logs
+      const recommendation = await mealRecommendationService.getRecommendationsFromRecentLogs(user.id);
+      if (recommendation) {
+        setRecentLog({
+          id: 'recommendation-1',
+          event_title: recommendation.eventTitle,
+          intensity: recommendation.intensity,
+          mood: recommendation.mood,
+          logged_at: recommendation.loggedAt,
+          recommendation: recommendation
+        });
+      } else {
+        // Fallback to mock data
+        const mockRecommendation = mealRecommendationService.getMockRecommendation();
+        setRecentLog({
+          id: 'mock-log-1',
+          event_title: mockRecommendation.eventTitle,
+          intensity: mockRecommendation.intensity,
+          mood: mockRecommendation.mood,
+          logged_at: mockRecommendation.loggedAt,
+          recommendation: mockRecommendation
+        });
+      }
+
+    } catch (error) {
+      console.error('Error fetching schedule data:', error);
     }
   }
 
@@ -249,6 +307,55 @@ export default function HomeScreen(props) {
     }
   }
 
+  function formatTime(timeString) {
+    const date = new Date(timeString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function getMealRecommendation(intensity, timeOfDay) {
+    const hour = new Date().getHours();
+    const isEvening = hour >= 17;
+    
+    if (intensity === 'high') {
+      if (isEvening) {
+        return {
+          title: "Recovery Dinner",
+          description: "High-protein meal with complex carbs to replenish glycogen stores",
+          foods: ["Grilled chicken", "Sweet potato", "Broccoli", "Greek yogurt"]
+        };
+      } else {
+        return {
+          title: "Pre-Workout Fuel",
+          description: "Light, easily digestible meal with moderate protein and carbs",
+          foods: ["Banana", "Oatmeal", "Almonds", "Protein shake"]
+        };
+      }
+    } else if (intensity === 'moderate') {
+      return {
+        title: "Balanced Meal",
+        description: "Well-rounded meal with protein, carbs, and healthy fats",
+        foods: ["Salmon", "Quinoa", "Mixed vegetables", "Avocado"]
+      };
+    } else {
+      return {
+        title: "Light Meal",
+        description: "Simple, nutritious meal to maintain energy levels",
+        foods: ["Turkey sandwich", "Apple", "Carrot sticks", "Water"]
+      };
+    }
+  }
+
+  function getEventIcon(type) {
+    switch (type) {
+      case 'practice':
+        return '🏀';
+      case 'game':
+        return '⚽';
+      default:
+        return '📅';
+    }
+  }
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
       {/* Header */}
@@ -305,6 +412,102 @@ export default function HomeScreen(props) {
           </View>
         </TouchableOpacity>
           </View>
+
+      {/* Schedule Section */}
+      {!hasSchedule ? (
+        // No schedule set up - show encouragement
+        <View style={styles.scheduleSection}>
+          <TouchableOpacity 
+            style={styles.scheduleSetupButton}
+            onPress={() => navigation.navigate('Schedule')}
+          >
+            <View style={styles.scheduleSetupContent}>
+              <Text style={styles.scheduleSetupIcon}>📅</Text>
+              <View style={styles.scheduleSetupTextContainer}>
+                <Text style={styles.scheduleSetupTitle}>Set Up Your Schedule</Text>
+                <Text style={styles.scheduleSetupSubtitle}>Add your practices and games to get personalized meal recommendations!</Text>
+              </View>
+              <Text style={styles.scheduleSetupArrow}>→</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        // Has schedule - show upcoming events and recommendations
+        <View style={styles.scheduleSection}>
+          {upcomingEvent && (
+            <View style={styles.upcomingEventCard}>
+              <View style={styles.upcomingEventHeader}>
+                <Text style={styles.upcomingEventIcon}>{getEventIcon(upcomingEvent.type)}</Text>
+                <View style={styles.upcomingEventInfo}>
+                  <Text style={styles.upcomingEventTitle}>Upcoming: {upcomingEvent.title}</Text>
+                  <Text style={styles.upcomingEventTime}>
+                    Today at {formatTime(upcomingEvent.start_time)}
+                  </Text>
+                  {upcomingEvent.location && (
+                    <Text style={styles.upcomingEventLocation}>📍 {upcomingEvent.location}</Text>
+                  )}
+                </View>
+              </View>
+              <TouchableOpacity 
+                style={styles.logEventButton}
+                onPress={() => navigation.navigate('Schedule')}
+              >
+                <Ionicons name="add-circle" size={20} color="#007AFF" />
+                <Text style={styles.logEventButtonText}>Log Intensity After</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {recentLog && (
+            <View style={styles.mealRecommendationCard}>
+              <View style={styles.mealRecommendationHeader}>
+                <Text style={styles.mealRecommendationIcon}>🍽️</Text>
+                <View style={styles.mealRecommendationInfo}>
+                  <Text style={styles.mealRecommendationTitle}>
+                    Based on your {recentLog.event_title}
+                  </Text>
+                  <Text style={styles.mealRecommendationSubtitle}>
+                    {recentLog.intensity} intensity • {recentLog.mood}
+                  </Text>
+                </View>
+              </View>
+              
+              {recentLog.recommendation && (
+                <View style={styles.mealRecommendationContent}>
+                  <Text style={styles.mealRecommendationType}>{recentLog.recommendation.title}</Text>
+                  <Text style={styles.mealRecommendationDescription}>{recentLog.recommendation.description}</Text>
+                  
+                  <View style={styles.mealRecommendationDetails}>
+                    <Text style={styles.mealRecommendationDetail}>
+                      <Text style={styles.mealRecommendationDetailLabel}>⏰ Timing:</Text> {recentLog.recommendation.timing}
+                    </Text>
+                    <Text style={styles.mealRecommendationDetail}>
+                      <Text style={styles.mealRecommendationDetailLabel}>💧 Hydration:</Text> {recentLog.recommendation.hydration}
+                    </Text>
+                    <Text style={styles.mealRecommendationDetail}>
+                      <Text style={styles.mealRecommendationDetailLabel}>🔄 Recovery:</Text> {recentLog.recommendation.recovery}
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.mealRecommendationFoods}>
+                    <Text style={styles.mealRecommendationFoodsTitle}>Recommended Foods:</Text>
+                    {recentLog.recommendation.foods.map((food, index) => (
+                      <Text key={index} style={styles.mealRecommendationFood}>• {food}</Text>
+                    ))}
+                  </View>
+                  
+                  <TouchableOpacity 
+                    style={styles.mealRecommendationButton}
+                    onPress={() => navigation.navigate('AIMealPlanner')}
+                  >
+                    <Text style={styles.mealRecommendationButtonText}>Get Full Recipe →</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+      )}
 
       {/* Today's Performance */}
       <Text style={styles.sectionTitle}>Today's Performance</Text>
@@ -546,5 +749,185 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#205081',
     letterSpacing: 0.5,
+  },
+  // Schedule Section Styles
+  scheduleSection: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+  },
+  scheduleSetupButton: {
+    backgroundColor: '#f0f8ff',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: '#007AFF',
+    borderStyle: 'dashed',
+  },
+  scheduleSetupContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  scheduleSetupIcon: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  scheduleSetupTextContainer: {
+    flex: 1,
+  },
+  scheduleSetupTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#007AFF',
+    marginBottom: 2,
+  },
+  scheduleSetupSubtitle: {
+    fontSize: 14,
+    color: '#666',
+  },
+  scheduleSetupArrow: {
+    fontSize: 24,
+    color: '#007AFF',
+    fontWeight: 'bold',
+  },
+  upcomingEventCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  upcomingEventHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  upcomingEventIcon: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  upcomingEventInfo: {
+    flex: 1,
+  },
+  upcomingEventTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#222',
+    marginBottom: 2,
+  },
+  upcomingEventTime: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  upcomingEventLocation: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  logEventButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f0f8ff',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+  },
+  logEventButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#007AFF',
+    marginLeft: 6,
+  },
+  mealRecommendationCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  mealRecommendationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  mealRecommendationIcon: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  mealRecommendationInfo: {
+    flex: 1,
+  },
+  mealRecommendationTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#222',
+    marginBottom: 2,
+  },
+  mealRecommendationSubtitle: {
+    fontSize: 14,
+    color: '#666',
+  },
+  mealRecommendationContent: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 12,
+  },
+  mealRecommendationType: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#22b573',
+    marginBottom: 4,
+  },
+  mealRecommendationDescription: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 8,
+  },
+  mealRecommendationDetails: {
+    backgroundColor: '#e8f5e8',
+    borderRadius: 8,
+    padding: 8,
+    marginBottom: 12,
+  },
+  mealRecommendationDetail: {
+    fontSize: 12,
+    color: '#555',
+    marginBottom: 4,
+  },
+  mealRecommendationDetailLabel: {
+    fontWeight: 'bold',
+    color: '#22b573',
+  },
+  mealRecommendationFoods: {
+    marginBottom: 12,
+  },
+  mealRecommendationFoodsTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#222',
+    marginBottom: 6,
+  },
+  mealRecommendationFood: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 2,
+  },
+  mealRecommendationButton: {
+    backgroundColor: '#22b573',
+    borderRadius: 8,
+    padding: 8,
+    alignItems: 'center',
+  },
+  mealRecommendationButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#fff',
   },
 }); 

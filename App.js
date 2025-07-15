@@ -18,6 +18,7 @@ import ScanScreen from './src/screens/ScanScreen';
 import AddFoodScreen from './src/screens/AddFoodScreen';
 import AIMealPlanner from './src/components/AIMealPlanner';
 import MealPlannerScreen from './src/screens/MealPlannerScreen';
+import ScheduleScreen from './src/screens/ScheduleScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -29,6 +30,7 @@ function MainApp({ session }) {
         <Tab.Screen name="Home" component={HomeScreen} />
         <Tab.Screen name="Inventory" component={InventoryScreen} initialParams={{ session }} />
         <Tab.Screen name="Daily" component={DailyScreen} />
+        <Tab.Screen name="Schedule" component={ScheduleScreen} />
         <Tab.Screen name="Nutrients" component={NutrientsScreen} />
         <Tab.Screen 
           name="Profile" 
