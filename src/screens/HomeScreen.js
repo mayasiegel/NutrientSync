@@ -358,12 +358,52 @@ export default function HomeScreen(props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
-      {/* Header */}
+      {/* Header with Streak Badge */}
       <View style={styles.headerRow}>
         <Text style={styles.appTitle}>NutrientSync</Text>
-        <TouchableOpacity>
-          <Image source={require('../../assets/icon.png')} style={styles.settingsIcon} />
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          {/* Streak Badge */}
+          <View style={styles.streakBadge}>
+            <Text style={styles.streakBadgeFlame}>🔥</Text>
+            <Text style={styles.streakBadgeText}>
+              {profile?.current_streak > 0 ? profile.current_streak : '0'}
+            </Text>
+          </View>
+          <TouchableOpacity>
+            <Image source={require('../../assets/icon.png')} style={styles.settingsIcon} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Today's Performance - Moved to top */}
+      <Text style={styles.sectionTitle}>Today's Performance</Text>
+      <View style={styles.performanceCard}>
+        <View style={styles.progressRow}>
+          <Text style={styles.progressLabel}>Protein Intake</Text>
+          <Text style={styles.progressValue}>80/100g</Text>
+        </View>
+        <View style={styles.progressBarBg}>
+          <View style={[styles.progressBar, { width: '80%' }]} />
+        </View>
+        <Text style={styles.progressSubLabel}>Target: 100g</Text>
+
+        <View style={styles.progressRow}>
+          <Text style={styles.progressLabel}>Hydration</Text>
+          <Text style={styles.progressValue}>3/5L</Text>
+        </View>
+        <View style={styles.progressBarBg}>
+          <View style={[styles.progressBar, { width: '60%', backgroundColor: '#3578e5' }]} />
+        </View>
+        <Text style={styles.progressSubLabel}>Target: 5L</Text>
+
+        <View style={styles.progressRow}>
+          <Text style={styles.progressLabel}>Energy Balance</Text>
+          <Text style={styles.progressValue}>1500/2000 kcal</Text>
+        </View>
+        <View style={styles.progressBarBg}>
+          <View style={[styles.progressBar, { width: '75%', backgroundColor: '#f7b731' }]} />
+        </View>
+        <Text style={styles.progressSubLabel}>Target: 2000 kcal</Text>
       </View>
 
       {/* Expiration Alerts */}
@@ -509,55 +549,6 @@ export default function HomeScreen(props) {
         </View>
       )}
 
-      {/* Today's Performance */}
-      <Text style={styles.sectionTitle}>Today's Performance</Text>
-      <View style={styles.performanceCard}>
-        <View style={styles.progressRow}>
-          <Text style={styles.progressLabel}>Protein Intake</Text>
-          <Text style={styles.progressValue}>80/100g</Text>
-        </View>
-        <View style={styles.progressBarBg}>
-          <View style={[styles.progressBar, { width: '80%' }]} />
-        </View>
-        <Text style={styles.progressSubLabel}>Target: 100g</Text>
-
-        <View style={styles.progressRow}>
-          <Text style={styles.progressLabel}>Hydration</Text>
-          <Text style={styles.progressValue}>3/5L</Text>
-        </View>
-        <View style={styles.progressBarBg}>
-          <View style={[styles.progressBar, { width: '60%', backgroundColor: '#3578e5' }]} />
-        </View>
-        <Text style={styles.progressSubLabel}>Target: 5L</Text>
-
-        <View style={styles.progressRow}>
-          <Text style={styles.progressLabel}>Energy Balance</Text>
-          <Text style={styles.progressValue}>1500/2000 kcal</Text>
-        </View>
-        <View style={styles.progressBarBg}>
-          <View style={[styles.progressBar, { width: '75%', backgroundColor: '#f7b731' }]} />
-        </View>
-        <Text style={styles.progressSubLabel}>Target: 2000 kcal</Text>
-      </View>
-
-      {/* Streak Display */}
-      <View style={styles.streakContainer}>
-        <Text style={styles.streakFlame}>🔥</Text>
-        <Text style={styles.streakText}>
-          {profile?.current_streak > 0
-            ? `You're on a ${profile.current_streak}-day streak!`
-            : "Start logging food to begin your streak!"}
-        </Text>
-        {profile?.current_streak > 0 && (
-          <Text style={styles.streakSubtext}>
-            Longest streak: {profile.longest_streak} days
-          </Text>
-        )}
-        {/* Optional: Milestone message */}
-        {profile?.current_streak === 10 && <Text style={styles.streakMilestone}>🎉 10-day milestone! Keep it up!</Text>}
-        {profile?.current_streak === 25 && <Text style={styles.streakMilestone}>🏅 25-day milestone! Amazing!</Text>}
-      </View>
-
       {/* Weekly Protein Intake Graph */}
       <View style={styles.graphCard}>
         <Text style={styles.graphTitle}>Weekly Protein Intake</Text>
@@ -633,9 +624,42 @@ const graphConfigCalories = {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f7fafd' },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 32, marginBottom: 8, marginHorizontal: 20 },
+  headerRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    marginTop: 32, 
+    marginBottom: 8, 
+    marginHorizontal: 20 
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   appTitle: { fontSize: 24, fontWeight: 'bold', color: '#222' },
   settingsIcon: { width: 28, height: 28, borderRadius: 8 },
+  streakBadge: {
+    backgroundColor: '#FF6B35',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    shadowColor: '#FF6B35',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  streakBadgeFlame: {
+    fontSize: 16,
+  },
+  streakBadgeText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
   sectionTitle: { fontSize: 20, fontWeight: 'bold', color: '#222', marginLeft: 20, marginTop: 24, marginBottom: 8 },
   performanceCard: { backgroundColor: '#fff', borderRadius: 18, marginHorizontal: 20, marginBottom: 20, padding: 18, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
   progressRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
@@ -706,11 +730,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
-  streakContainer: { alignItems: 'center', marginVertical: 16 },
-  streakFlame: { fontSize: 40, marginBottom: 4 },
-  streakText: { fontSize: 18, fontWeight: 'bold', color: '#e67e22' },
-  streakSubtext: { fontSize: 14, color: '#888' },
-  streakMilestone: { fontSize: 16, color: '#22b573', fontWeight: 'bold', marginTop: 6 },
   mealPlannerCardBtnGreen: {
     backgroundColor: '#22b573',
     borderRadius: 16,
