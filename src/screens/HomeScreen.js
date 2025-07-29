@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import scheduleService from '../services/scheduleService';
 import mealRecommendationService from '../services/mealRecommendationService';
+import budgetService from '../services/budgetService';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -126,12 +127,15 @@ export default function HomeScreen(props) {
   const [hasSchedule, setHasSchedule] = useState(false);
   const [upcomingEvent, setUpcomingEvent] = useState(null);
   const [recentLog, setRecentLog] = useState(null);
+  const [budgetAlerts, setBudgetAlerts] = useState([]);
+  const [budgetSummary, setBudgetSummary] = useState(null);
   const navigation = useNavigation();
 
   useEffect(() => {
     fetchInventoryAndCalculateAlerts();
     fetchProfile();
     fetchScheduleData();
+    fetchBudgetAlerts();
   }, []);
 
   async function fetchInventoryAndCalculateAlerts() {
@@ -229,6 +233,22 @@ export default function HomeScreen(props) {
 
     } catch (error) {
       console.error('Error fetching schedule data:', error);
+    }
+  }
+
+  async function fetchBudgetAlerts() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const alerts = await budgetService.getUnreadAlerts(user.id);
+      setBudgetAlerts(alerts);
+      
+      // Also fetch budget summary
+      const summary = await budgetService.getBudgetSummary(user.id);
+      setBudgetSummary(summary);
+    } catch (error) {
+      console.error('Error fetching budget alerts:', error);
     }
   }
 
@@ -406,20 +426,89 @@ export default function HomeScreen(props) {
         <Text style={styles.progressSubLabel}>Target: 2000 kcal</Text>
       </View>
 
-      {/* Expiration Alerts */}
+      {/* Budget Widget */}
+      {budgetSummary && budgetSummary.hasBudget && (
+        <View style={styles.budgetWidget}>
+          <View style={styles.budgetWidgetHeader}>
+            <Text style={styles.budgetWidgetTitle}>💰 Monthly Budget</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+              <Text style={styles.budgetWidgetEdit}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.budgetWidgetContent}>
+            <View style={styles.budgetWidgetRow}>
+              <Text style={styles.budgetWidgetLabel}>Budget</Text>
+              <Text style={styles.budgetWidgetValue}>${budgetSummary.budget.monthly_budget}</Text>
+            </View>
+            <View style={styles.budgetWidgetRow}>
+              <Text style={styles.budgetWidgetLabel}>Spent</Text>
+              <Text style={styles.budgetWidgetValue}>${budgetSummary.spending.total_spent}</Text>
+            </View>
+            <View style={styles.budgetWidgetRow}>
+              <Text style={styles.budgetWidgetLabel}>Remaining</Text>
+              <Text style={[styles.budgetWidgetValue, { 
+                color: budgetSummary.status === 'over_budget' ? '#e74c3c' : 
+                       budgetSummary.status === 'warning' ? '#f39c12' : '#27ae60' 
+              }]}>
+                ${budgetSummary.spending.budget_remaining}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.budgetProgressContainer}>
+            <View style={styles.budgetProgressBar}>
+              <View 
+                style={[
+                  styles.budgetProgressFill, 
+                  { 
+                    width: `${Math.min(budgetSummary.spending.percentage_used, 100)}%`,
+                    backgroundColor: budgetSummary.status === 'over_budget' ? '#e74c3c' : 
+                                   budgetSummary.status === 'warning' ? '#f39c12' : '#27ae60'
+                  }
+                ]} 
+              />
+            </View>
+            <Text style={[styles.budgetProgressText, { 
+              color: budgetSummary.status === 'over_budget' ? '#e74c3c' : 
+                     budgetSummary.status === 'warning' ? '#f39c12' : '#27ae60' 
+            }]}>
+              {budgetSummary.spending.percentage_used.toFixed(1)}% used
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* Alerts Section */}
       {loading ? (
         <ActivityIndicator size="small" style={{ marginVertical: 16 }} />
-      ) : expirationAlerts.length > 0 ? (
+      ) : (expirationAlerts.length > 0 || budgetAlerts.length > 0) ? (
         <View style={styles.alertsSection}>
-          <Text style={styles.alertsTitle}>⚠️ Expiration Alerts</Text>
-          {expirationAlerts.slice(0, 3).map((alert) => (
-            <View key={alert.id} style={[styles.alertCard, getAlertStyle(alert.urgency)]}>
-              <Text style={styles.alertText}>{alert.text}</Text>
-              <Text style={styles.alertCategory}>{alert.category}</Text>
-        </View>
-          ))}
-          {expirationAlerts.length > 3 && (
-            <Text style={styles.moreAlerts}>+{expirationAlerts.length - 3} more items expiring soon</Text>
+          {/* Budget Alerts */}
+          {budgetAlerts.length > 0 && (
+            <>
+              <Text style={styles.alertsTitle}>💰 Budget Alerts</Text>
+              {budgetAlerts.slice(0, 2).map((alert) => (
+                <View key={alert.id} style={[styles.alertCard, { backgroundColor: '#fff3e0', borderLeftColor: '#f39c12' }]}>
+                  <Text style={styles.alertText}>{alert.message}</Text>
+                  <Text style={styles.alertCategory}>Budget</Text>
+                </View>
+              ))}
+            </>
+          )}
+          
+          {/* Expiration Alerts */}
+          {expirationAlerts.length > 0 && (
+            <>
+              <Text style={styles.alertsTitle}>⚠️ Expiration Alerts</Text>
+              {expirationAlerts.slice(0, 3).map((alert) => (
+                <View key={alert.id} style={[styles.alertCard, getAlertStyle(alert.urgency)]}>
+                  <Text style={styles.alertText}>{alert.text}</Text>
+                  <Text style={styles.alertCategory}>{alert.category}</Text>
+                </View>
+              ))}
+              {expirationAlerts.length > 3 && (
+                <Text style={styles.moreAlerts}>+{expirationAlerts.length - 3} more items expiring soon</Text>
+              )}
+            </>
           )}
         </View>
       ) : null}
@@ -948,5 +1037,71 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     color: '#fff',
+  },
+  // Budget Widget Styles
+  budgetWidget: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  budgetWidgetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  budgetWidgetTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#222',
+  },
+  budgetWidgetEdit: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  budgetWidgetContent: {
+    marginBottom: 12,
+  },
+  budgetWidgetRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  budgetWidgetLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  budgetWidgetValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#222',
+  },
+  budgetProgressContainer: {
+    marginTop: 8,
+  },
+  budgetProgressBar: {
+    width: '100%',
+    height: 8,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 4,
+  },
+  budgetProgressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  budgetProgressText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 }); 

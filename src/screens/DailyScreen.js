@@ -288,6 +288,7 @@ export default function DailyScreen() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }} keyboardShouldPersistTaps="handled">
+        {/* Header with Title and Totals */}
         <View style={styles.titleSection}>
           <Text style={styles.appTitle}>Daily Food Log</Text>
           <Text style={styles.subtitle}>Today's Totals:</Text>
@@ -298,6 +299,8 @@ export default function DailyScreen() {
             <Text style={styles.totalText}>Fat: <Text style={styles.fatTotal}>{totalFat.toFixed(1)}g</Text></Text>
           </View>
         </View>
+
+        {/* Simple Add Food Section */}
         {inventory.length === 0 && !inventoryLoading ? (
           <View style={styles.emptyInventoryContainer}>
             <Text style={styles.emptyInventoryText}>Your inventory is empty!</Text>
@@ -310,79 +313,80 @@ export default function DailyScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-        <View style={styles.addBox}>
-          <View style={styles.row}>
-            <View style={{ flex: 1 }}>
-              <View style={{ position: 'relative' }}>
-                <TextInput
-                  style={styles.selectInput}
-                  placeholder={inventory.length === 0 ? "No foods in inventory - add some first!" : "Select food from inventory"}
-                  value={foodInput}
-                  onChangeText={text => {
-                    setFoodInput(text);
-                    setDropdownVisible(true);
-                  }}
-                  onFocus={() => setDropdownVisible(true)}
-                  autoCorrect={false}
-                  autoCapitalize="none"
-                  editable={inventory.length > 0}
-                />
-                {dropdownVisible && (
-                  <View style={[styles.dropdownOverlay, { zIndex: 10, position: 'absolute', top: 48, left: 0, right: 0 }]}> 
-                    <View style={styles.dropdown}>
-                      {inventoryLoading ? (
-                        <View style={styles.dropdownItem}>
-                          <ActivityIndicator size="small" color="#007AFF" />
-                          <Text style={styles.dropdownText}>Loading inventory...</Text>
-                        </View>
-                      ) : filteredFoods.length > 0 ? (
-                        filteredFoods.map(food => (
-                          <TouchableOpacity
-                            key={food.id}
-                            style={styles.dropdownItem}
-                            onPress={() => {
-                              setFoodInput(food.name);
-                              setSelectedFoodId(food.id);
-                              setDropdownVisible(false);
-                            }}
-                          >
-                            <Text style={styles.dropdownText}>{food.name}</Text>
-                            <Text style={styles.dropdownQuantity}>Qty: {food.quantity} {food.unit}</Text>
-                          </TouchableOpacity>
-                        ))
-                      ) : (
-                        <View style={styles.dropdownItem}>
-                          <Text style={styles.dropdownText}>No foods found in inventory</Text>
-                        </View>
-                      )}
+          <View style={styles.addBox}>
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <View style={{ position: 'relative' }}>
+                  <TextInput
+                    style={styles.selectInput}
+                    placeholder="Select food from inventory"
+                    value={foodInput}
+                    onChangeText={text => {
+                      setFoodInput(text);
+                      setDropdownVisible(true);
+                    }}
+                    onFocus={() => setDropdownVisible(true)}
+                    autoCorrect={false}
+                    autoCapitalize="none"
+                    editable={inventory.length > 0}
+                  />
+                  {dropdownVisible && (
+                    <View style={[styles.dropdownOverlay, { zIndex: 10, position: 'absolute', top: 48, left: 0, right: 0 }]}> 
+                      <View style={styles.dropdown}>
+                        {inventoryLoading ? (
+                          <View style={styles.dropdownItem}>
+                            <ActivityIndicator size="small" color="#007AFF" />
+                            <Text style={styles.dropdownText}>Loading inventory...</Text>
+                          </View>
+                        ) : filteredFoods.length > 0 ? (
+                          filteredFoods.map(food => (
+                            <TouchableOpacity
+                              key={food.id}
+                              style={styles.dropdownItem}
+                              onPress={() => {
+                                setFoodInput(food.name);
+                                setSelectedFoodId(food.id);
+                                setDropdownVisible(false);
+                              }}
+                            >
+                              <Text style={styles.dropdownText}>{food.name}</Text>
+                              <Text style={styles.dropdownQuantity}>Qty: {food.quantity} {food.unit}</Text>
+                            </TouchableOpacity>
+                          ))
+                        ) : (
+                          <View style={styles.dropdownItem}>
+                            <Text style={styles.dropdownText}>No foods found in inventory</Text>
+                          </View>
+                        )}
+                      </View>
                     </View>
-                  </View>
-                )}
+                  )}
+                </View>
               </View>
             </View>
+            <View style={[styles.row, { marginTop: 8 }]}>
+              <TextInput
+                style={styles.qtyInput}
+                placeholder="Qty"
+                keyboardType="numeric"
+                value={quantity}
+                onChangeText={setQuantity}
+              />
+              <TouchableOpacity style={styles.addBtn} onPress={handleAdd}>
+                <Text style={styles.addBtnText}>Add</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.pastBtn} onPress={() => setPastModal(true)}>
+                <Text style={styles.pastBtnText}>Past Logs</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-          <View style={[styles.row, { marginTop: 8 }]}>
-            <TextInput
-              style={styles.qtyInput}
-              placeholder="Qty"
-              keyboardType="numeric"
-              value={quantity}
-              onChangeText={setQuantity}
-            />
-            <TouchableOpacity style={styles.addBtn} onPress={handleAdd}>
-              <Text style={styles.addBtnText}>Add</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.pastBtn} onPress={() => setPastModal(true)}>
-              <Text style={styles.pastBtnText}>View Past Logs</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
         )}
-        {/* Today's log */}
+
+        {/* Today's Logged Foods */}
         {log.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No foods logged today</Text>
-            <Text style={styles.emptySubtext}>Add foods from your inventory to start tracking</Text>
+            <Text style={styles.emptySubtext}>Add foods from your inventory above to start tracking</Text>
           </View>
         ) : (
           log.map((item) => (

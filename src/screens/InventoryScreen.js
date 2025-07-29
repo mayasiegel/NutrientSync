@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, Pressable, FlatList, Alert, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import FoodSearch from '../components/FoodSearch';
 import { supabase } from '../lib/supabase'; // Adjust the path if needed
 
@@ -57,7 +58,7 @@ export default function InventoryScreen({ navigation }) {
       name: item.name,
       category: item.category,
       quantity: String(item.quantity),
-      expiration: item.expiration,
+      expiration: item.expiration_date,
       calories: String(item.calories),
     });
     setModalVisible(true);
@@ -68,13 +69,23 @@ export default function InventoryScreen({ navigation }) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      
+      console.log('Fetching inventory for user:', user.id);
+      
       const { data, error } = await supabase
         .from('inventory')
         .select('*')
         .eq('user_id', user.id)
         .order('name');
-      if (!error) setInventory(data || []);
-      else console.error('Fetch inventory error:', error);
+      
+      console.log('Inventory fetch result:', { data, error });
+      
+      if (!error) {
+        console.log('Setting inventory with', data?.length || 0, 'items');
+        setInventory(data || []);
+      } else {
+        console.error('Fetch inventory error:', error);
+      }
     } catch (e) {
       console.error('Fetch inventory exception:', e);
     }
@@ -83,6 +94,14 @@ export default function InventoryScreen({ navigation }) {
   useEffect(() => {
     fetchInventory();
   }, []);
+
+  // Refresh inventory when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('Inventory screen focused - refreshing data');
+      fetchInventory();
+    }, [])
+  );
 
   // Add or edit food in Supabase
   const handleSave = async () => {
@@ -184,7 +203,7 @@ export default function InventoryScreen({ navigation }) {
         <View style={styles.foodQty}><Text style={styles.foodQtyText}>{item.quantity}</Text></View>
       </View>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-        <Text style={styles.expiryText}>Expires on <Text style={styles.expiryDate}>{formatDate(item.expiration)}</Text></Text>
+        <Text style={styles.expiryText}>Expires on <Text style={styles.expiryDate}>{formatDate(item.expiration_date)}</Text></Text>
         <TouchableOpacity onPress={() => openEditModal(item)}><Text style={styles.editBtn}>Edit</Text></TouchableOpacity>
       </View>
       <View style={{ marginTop: 8 }}>
@@ -371,10 +390,16 @@ const styles = StyleSheet.create({
   filterChipSelected: { backgroundColor: '#2196f3' },
   filterChipText: { color: '#222', fontSize: 15 },
   filterChipTextSelected: { color: '#fff', fontWeight: 'bold' },
-  foodCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 14, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
+  foodCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 14, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
   foodImg: { width: 48, height: 48, borderRadius: 24, marginRight: 16, backgroundColor: '#e0e0e0' },
   foodName: { fontSize: 17, fontWeight: 'bold', color: '#222' },
-  foodExpiry: { fontSize: 14, color: '#888', marginTop: 2 },
+  foodCategory: { fontSize: 14, color: '#666', marginTop: 2 },
+  foodQty: { backgroundColor: '#007AFF', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
+  foodQtyText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
+  expiryText: { fontSize: 14, color: '#666' },
+  expiryDate: { fontWeight: 'bold', color: '#e74c3c' },
+  editBtn: { color: '#007AFF', fontSize: 14, fontWeight: 'bold' },
+  caloriesText: { fontSize: 14, color: '#666' },
   emptyText: { textAlign: 'center', color: '#888', marginTop: 32, fontSize: 16 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { backgroundColor: '#fff', borderRadius: 24, padding: 24, width: '90%', alignItems: 'center' },

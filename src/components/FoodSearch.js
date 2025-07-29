@@ -21,8 +21,28 @@ const FoodSearch = ({ onAdd }) => {
     try {
       const data = await usdaApi.searchFoods(query);
       setResults(data.foods || []);
+      console.log('Search results:', data.foods?.length || 0, 'items found');
     } catch (err) {
+      console.error('Search error:', err);
       setError(`Error: ${err.message || 'Unknown error occurred'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTestAPI = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const testResult = await usdaApi.testConnection();
+      if (testResult.success) {
+        setError('✅ USDA API is working! Try searching for "apple" or "chicken"');
+        setQuery('apple');
+      } else {
+        setError(`❌ USDA API test failed: ${testResult.error}`);
+      }
+    } catch (err) {
+      setError(`❌ Test failed: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -78,6 +98,9 @@ const FoodSearch = ({ onAdd }) => {
         />
         <Button title="Search" onPress={handleSearch} disabled={loading} />
       </View>
+      <TouchableOpacity style={styles.testButton} onPress={handleTestAPI}>
+        <Text style={styles.testButtonText}>🔧 Test USDA API</Text>
+      </TouchableOpacity>
       {loading && <ActivityIndicator style={{ marginVertical: 16 }} size="large" color="#007AFF" />}
       {error && <Text style={styles.error}>{error}</Text>}
       <FlatList
@@ -259,6 +282,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
     textAlign: 'center',
+  },
+  testButton: {
+    backgroundColor: '#f39c12',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    alignSelf: 'center',
+  },
+  testButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
 });
 

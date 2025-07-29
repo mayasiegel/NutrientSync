@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, ScrollView, TouchableOpacity, Image, Modal, Pressable } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { getCurrentSeason, getSeasonDescription } from '../lib/sportSeasons';
+import budgetService from '../services/budgetService';
 
 const GOALS = ['Gain Weight', 'Lose Weight', 'Maintain Weight', 'Build Muscle', 'Improve Performance'];
 
@@ -9,6 +10,8 @@ export default function ProfileScreen({ route }) {
   const { session } = route.params;
   const [profile, setProfile] = useState(null);
   const [editing, setEditing] = useState(false);
+  const [budget, setBudget] = useState(null);
+  const [budgetSpending, setBudgetSpending] = useState(null);
   const [form, setForm] = useState({ 
     username: '', 
     age: '', 
@@ -23,6 +26,9 @@ export default function ProfileScreen({ route }) {
     activity_level: '',
     goal: '',
     season: ''
+  });
+  const [budgetForm, setBudgetForm] = useState({
+    monthly_budget: ''
   });
   const [goalModal, setGoalModal] = useState(false);
 
@@ -53,7 +59,27 @@ export default function ProfileScreen({ route }) {
         });
       }
     }
+    
+    async function fetchBudget() {
+      try {
+        const budgetData = await budgetService.getCurrentMonthBudget(session.user.id);
+        if (budgetData) {
+          setBudget(budgetData);
+          setBudgetForm({ monthly_budget: budgetData.monthly_budget.toString() });
+          
+          // Get spending data
+          const spendingData = await budgetService.getMonthlySpending(session.user.id);
+          if (spendingData) {
+            setBudgetSpending(spendingData);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching budget:', error);
+      }
+    }
+    
     fetchProfile();
+    fetchBudget();
   }, [session.user.id]);
 
   async function handleSave() {
@@ -71,6 +97,40 @@ export default function ProfileScreen({ route }) {
       setEditing(false);
       Alert.alert('Profile updated!');
     }
+  }
+
+  async function handleBudgetSave() {
+    if (!budgetForm.monthly_budget || parseFloat(budgetForm.monthly_budget) <= 0) {
+      Alert.alert('Error', 'Please enter a valid budget amount');
+      return;
+    }
+
+    try {
+      const data = await budgetService.setMonthlyBudget(session.user.id, budgetForm.monthly_budget);
+      setBudget(data);
+      setEditing(false);
+      Alert.alert('Budget updated!');
+      
+      // Refresh spending data
+      const spendingData = await budgetService.getMonthlySpending(session.user.id);
+      if (spendingData) {
+        setBudgetSpending(spendingData);
+      }
+    } catch (error) {
+      Alert.alert('Error', error.message);
+    }
+  }
+
+  function getBudgetStatusColor(percentage) {
+    if (percentage >= 100) return '#e74c3c'; // Red for over budget
+    if (percentage >= 80) return '#f39c12'; // Orange for warning
+    return '#27ae60'; // Green for good
+  }
+
+  function getBudgetStatusText(percentage) {
+    if (percentage >= 100) return 'Over Budget';
+    if (percentage >= 80) return 'Warning';
+    return 'On Track';
   }
 
   if (!profile) return <Text>Loading...</Text>;
@@ -94,6 +154,105 @@ export default function ProfileScreen({ route }) {
           </Text>
         </View>
       </View>
+
+      {/* Budget Section */}
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>💰 Monthly Budget</Text>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <TouchableOpacity onPress={() => setEditing(editing === 'budget' ? false : 'budget')}>
+              <Text style={styles.editBtn}>{editing === 'budget' ? 'Cancel' : 'Edit'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={async () => {
+              try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                  await budgetService.addMockTransactions(user.id);
+                  Alert.alert('Success', 'Added test transactions! Check your budget status.');
+                  fetchBudget(); // Refresh budget data
+                }
+              } catch (error) {
+                Alert.alert('Error', 'Failed to add test transactions');
+              }
+            }}>
+              <Text style={[styles.editBtn, { color: '#27ae60' }]}>Add Test Data</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        {editing === 'budget' ? (
+          <>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Monthly Budget</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <Text style={{ marginRight: 8 }}>$</Text>
+                <TextInput
+                  style={[styles.inputInline, { flex: 1 }]}
+                  value={budgetForm.monthly_budget}
+                  onChangeText={v => setBudgetForm(f => ({ ...f, monthly_budget: v }))}
+                  placeholder="500"
+                  placeholderTextColor="#aaa"
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 }}>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleBudgetSave}>
+                <Text style={styles.saveBtnText}>Save</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditing(false)}>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        ) : (
+          <>
+            {budget ? (
+              <>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Monthly Budget</Text>
+                  <Text style={styles.infoValue}>${budget.monthly_budget}</Text>
+                </View>
+                {budgetSpending && (
+                  <>
+                    <View style={styles.infoRow}>
+                      <Text style={styles.infoLabel}>Spent This Month</Text>
+                      <Text style={styles.infoValue}>${budgetSpending.total_spent}</Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                      <Text style={styles.infoLabel}>Remaining</Text>
+                      <Text style={[styles.infoValue, { color: getBudgetStatusColor(budgetSpending.percentage_used) }]}>
+                        ${budgetSpending.budget_remaining}
+                      </Text>
+                    </View>
+                    <View style={styles.budgetProgressContainer}>
+                      <View style={styles.budgetProgressBar}>
+                        <View 
+                          style={[
+                            styles.budgetProgressFill, 
+                            { 
+                              width: `${Math.min(budgetSpending.percentage_used, 100)}%`,
+                              backgroundColor: getBudgetStatusColor(budgetSpending.percentage_used)
+                            }
+                          ]} 
+                        />
+                      </View>
+                      <Text style={[styles.budgetStatusText, { color: getBudgetStatusColor(budgetSpending.percentage_used) }]}>
+                        {getBudgetStatusText(budgetSpending.percentage_used)} ({budgetSpending.percentage_used}%)
+                      </Text>
+                    </View>
+                  </>
+                )}
+              </>
+            ) : (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Monthly Budget</Text>
+                <Text style={styles.infoValue}>Not set</Text>
+              </View>
+            )}
+          </>
+        )}
+      </View>
+
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Text style={styles.cardTitle}>🎯 Goals & Season</Text>
@@ -477,5 +636,25 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  budgetProgressContainer: {
+    marginTop: 12,
+  },
+  budgetProgressBar: {
+    width: '100%',
+    height: 8,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  budgetProgressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  budgetStatusText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginTop: 4,
+    textAlign: 'center',
   },
 }); 

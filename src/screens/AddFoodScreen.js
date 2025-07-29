@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FoodSearch from '../components/FoodSearch';
+import { supabase } from '../lib/supabase';
+import budgetService from '../services/budgetService';
 
 export default function AddFoodScreen({ navigation, route }) {
   const [customModalVisible, setCustomModalVisible] = useState(false);
@@ -10,16 +12,132 @@ export default function AddFoodScreen({ navigation, route }) {
   const [customQuantity, setCustomQuantity] = useState('');
   const [customExpiry, setCustomExpiry] = useState('');
   const [customCalories, setCustomCalories] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleCustomSave = () => {
-    // You can wire this up to your backend or inventory logic
-    setCustomModalVisible(false);
-    setCustomName('');
-    setCustomCategory('');
-    setCustomQuantity('');
-    setCustomExpiry('');
-    setCustomCalories('');
-    // Optionally, show a confirmation or add to inventory
+  const handleAddFood = async (foodItem) => {
+    setLoading(true);
+    try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        Alert.alert('Error', 'User not authenticated');
+        return;
+      }
+
+      // Extract nutrients from USDA data
+      const nutrients = foodItem.foodNutrients || [];
+      const getNutrientValue = (name) => {
+        return nutrients.find(n => n.nutrientName === name)?.value || 0;
+      };
+
+      // Add to inventory (using the existing inventory table structure)
+      const inventoryDataToInsert = {
+        user_id: user.id,
+        name: foodItem.description,
+        category: foodItem.brandName ? 'Branded' : 'Generic',
+        expiration_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default 7 days
+        quantity: 1,
+        calories: getNutrientValue('Energy'),
+        protein: getNutrientValue('Protein'),
+        carbs: getNutrientValue('Carbohydrate, by difference'),
+        fat: getNutrientValue('Total lipid (fat)'),
+        fdc_id: foodItem.fdcId?.toString(),
+      };
+      
+      console.log('Inserting inventory data:', inventoryDataToInsert);
+      
+      const { data: inventoryData, error: inventoryError } = await supabase
+        .from('inventory')
+        .insert(inventoryDataToInsert)
+        .select()
+        .single();
+
+      if (inventoryError) {
+        console.error('Error adding to inventory:', inventoryError);
+        Alert.alert('Error', 'Failed to add food to inventory');
+        return;
+      }
+      
+      console.log('Successfully added to inventory:', inventoryData);
+
+      // Estimate cost and add budget transaction
+      try {
+        const estimatedCost = await budgetService.estimateFoodCost(foodItem.description);
+        await budgetService.addTransaction(user.id, estimatedCost, foodItem.description, 'grocery');
+        console.log(`Added budget transaction: $${estimatedCost} for ${foodItem.description}`);
+      } catch (budgetError) {
+        console.error('Budget tracking error (non-critical):', budgetError);
+        // Don't fail the whole operation if budget tracking fails
+      }
+
+      Alert.alert('Success', `${foodItem.description} added to inventory!`);
+      navigation.goBack();
+    } catch (error) {
+      console.error('Error adding food:', error);
+      Alert.alert('Error', 'Failed to add food');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCustomSave = async () => {
+    if (!customName.trim()) {
+      Alert.alert('Error', 'Please enter a food name');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        Alert.alert('Error', 'User not authenticated');
+        return;
+      }
+
+      // Add to inventory
+      const { data: inventoryData, error: inventoryError } = await supabase
+        .from('inventory')
+        .insert({
+          user_id: user.id,
+          name: customName,
+          category: customCategory || 'Other',
+          expiration_date: customExpiry || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          quantity: customQuantity || 1,
+          calories: customCalories ? parseFloat(customCalories) : 0,
+        })
+        .select()
+        .single();
+
+      if (inventoryError) {
+        console.error('Error adding to inventory:', inventoryError);
+        Alert.alert('Error', 'Failed to add food to inventory');
+        return;
+      }
+
+      // Estimate cost and add budget transaction
+      try {
+        const estimatedCost = await budgetService.estimateFoodCost(customName);
+        await budgetService.addTransaction(user.id, estimatedCost, customName, 'grocery');
+        console.log(`Added budget transaction: $${estimatedCost} for ${customName}`);
+      } catch (budgetError) {
+        console.error('Budget tracking error (non-critical):', budgetError);
+      }
+
+      Alert.alert('Success', `${customName} added to inventory!`);
+      setCustomModalVisible(false);
+      setCustomName('');
+      setCustomCategory('');
+      setCustomQuantity('');
+      setCustomExpiry('');
+      setCustomCalories('');
+      navigation.goBack();
+    } catch (error) {
+      console.error('Error adding custom food:', error);
+      Alert.alert('Error', 'Failed to add food');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -37,7 +155,7 @@ export default function AddFoodScreen({ navigation, route }) {
       {/* Add vertical space below header */}
       <View style={{ height: 12 }} />
       {/* USDA Food Search */}
-      <FoodSearch onAdd={() => navigation.goBack()} />
+      <FoodSearch onAdd={handleAddFood} />
 
       {/* Custom Add Modal */}
       <Modal visible={customModalVisible} animationType="slide" transparent onRequestClose={() => setCustomModalVisible(false)}>
@@ -60,7 +178,9 @@ export default function AddFoodScreen({ navigation, route }) {
             </ScrollView>
             <View style={styles.modalBtnRow}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setCustomModalVisible(false)}><Text style={styles.cancelBtnText}>Cancel</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleCustomSave}><Text style={styles.saveBtnText}>Save</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleCustomSave} disabled={loading}>
+                <Text style={styles.saveBtnText}>{loading ? 'Adding...' : 'Save'}</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
